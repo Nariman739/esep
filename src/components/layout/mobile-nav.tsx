@@ -9,14 +9,15 @@ import {
   FileText,
   DollarSign,
   User,
+  MessageSquare,
 } from "lucide-react";
 
 const navItems = [
   { href: "/dashboard", label: "Главная", icon: LayoutDashboard },
+  { href: "/dashboard/assistant", label: "AI", icon: MessageSquare },
   { href: "/dashboard/calculator", label: "Расчёт", icon: Calculator },
   { href: "/dashboard/estimates", label: "КП", icon: FileText },
   { href: "/dashboard/prices", label: "Цены", icon: DollarSign },
-  { href: "/dashboard/profile", label: "Профиль", icon: User },
 ];
 
 export function MobileNav() {

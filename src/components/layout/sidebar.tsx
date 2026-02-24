@@ -10,10 +10,12 @@ import {
   DollarSign,
   User,
   LogOut,
+  MessageSquare,
 } from "lucide-react";
 
 const navItems = [
   { href: "/dashboard", label: "Главная", icon: LayoutDashboard },
+  { href: "/dashboard/assistant", label: "Ассистент", icon: MessageSquare },
   { href: "/dashboard/calculator", label: "Калькулятор", icon: Calculator },
   { href: "/dashboard/estimates", label: "Расчёты", icon: FileText },
   { href: "/dashboard/prices", label: "Цены", icon: DollarSign },

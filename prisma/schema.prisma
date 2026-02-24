@@ -44,6 +44,7 @@ model Master {
   prices          MasterPrice[]
   estimates       Estimate[]
   sessions        Session[]
+  chatSessions    ChatSession[]
 }
 
 model Session {
@@ -111,6 +112,8 @@ model Estimate {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
+  chatSession     ChatSession?
+
   master          Master   @relation(fields: [masterId], references: [id], onDelete: Cascade)
 }
 
@@ -120,4 +123,30 @@ enum EstimateStatus {
   VIEWED
   CONFIRMED
   REJECTED
+}
+
+// ============================================
+// CHAT / ASSISTANT
+// ============================================
+
+model ChatSession {
+  id              String      @id @default(uuid())
+  masterId        String
+  messages        Json        @default("[]")
+  photoUrls       String[]    @default([])
+  extractedRooms  Json?
+  calculationData Json?
+  estimateId      String?     @unique
+  status          ChatStatus  @default(ACTIVE)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  estimate        Estimate?   @relation(fields: [estimateId], references: [id])
+  master          Master      @relation(fields: [masterId], references: [id], onDelete: Cascade)
+}
+
+enum ChatStatus {
+  ACTIVE
+  COMPLETED
+  ABANDONED
 }

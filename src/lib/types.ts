@@ -78,6 +78,26 @@ export interface ClientInfo {
 }
 
 // ============================================
+// Chat / Assistant
+// ============================================
+
+export interface ChatMessage {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  imageUrl?: string;
+  timestamp: string;
+  quickActions?: QuickAction[];
+  calculationResult?: CalculationResult;
+}
+
+export interface QuickAction {
+  label: string;
+  action: string;
+  data?: Record<string, unknown>;
+}
+
+// ============================================
 // Master Profile
 // ============================================
 
