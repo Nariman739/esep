@@ -41,10 +41,15 @@ export function useAssistant(): UseAssistantReturn {
           body: formData,
         });
 
-        if (!res.ok) return null;
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          console.error("Upload failed:", res.status, err);
+          return null;
+        }
         const data = await res.json();
         return data.url;
-      } catch {
+      } catch (err) {
+        console.error("Upload error:", err);
         return null;
       } finally {
         setIsUploading(false);

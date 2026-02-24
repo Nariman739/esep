@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Camera, ImagePlus, Send, X, Loader2 } from "lucide-react";
+import { Camera, ImagePlus, Send, X, Loader2, AlertCircle } from "lucide-react";
 
 interface ChatInputProps {
   onSend: (text: string, imageUrl?: string) => void;
@@ -15,6 +15,7 @@ export function ChatInput({ onSend, onUploadPhoto, disabled, isUploading }: Chat
   const [text, setText] = useState("");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
@@ -27,6 +28,7 @@ export function ChatInput({ onSend, onUploadPhoto, disabled, isUploading }: Chat
     setText("");
     setPreviewUrl(null);
     setUploadedUrl(null);
+    setUploadError(false);
 
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
@@ -42,7 +44,6 @@ export function ChatInput({ onSend, onUploadPhoto, disabled, isUploading }: Chat
 
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setText(e.target.value);
-    // Auto-grow textarea
     const el = e.target;
     el.style.height = "auto";
     el.style.height = Math.min(el.scrollHeight, 120) + "px";
@@ -52,56 +53,90 @@ export function ChatInput({ onSend, onUploadPhoto, disabled, isUploading }: Chat
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Show local preview
+    // Show local preview immediately
     const localUrl = URL.createObjectURL(file);
     setPreviewUrl(localUrl);
+    setUploadError(false);
+    setUploadedUrl(null);
+
+    // Reset input so same file can be selected again
+    e.target.value = "";
 
     // Upload
     const url = await onUploadPhoto(file);
     if (url) {
       setUploadedUrl(url);
     } else {
-      setPreviewUrl(null);
+      // Keep preview but show error
+      setUploadError(true);
     }
-
-    // Reset input
-    e.target.value = "";
   };
 
   const removePhoto = () => {
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(null);
     setUploadedUrl(null);
+    setUploadError(false);
+  };
+
+  const retryUpload = () => {
+    // Re-open gallery to select again
+    setPreviewUrl(null);
+    setUploadedUrl(null);
+    setUploadError(false);
+    galleryInputRef.current?.click();
   };
 
   return (
     <div className="border-t bg-white px-3 py-2 safe-area-bottom">
       {/* Photo preview */}
       {previewUrl && (
-        <div className="relative inline-block mb-2">
-          <img
-            src={previewUrl}
-            alt="Preview"
-            className="h-20 w-20 object-cover rounded-lg"
-          />
-          {isUploading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-lg">
-              <Loader2 className="h-5 w-5 animate-spin text-white" />
+        <div className="mb-2">
+          <div className="relative inline-block">
+            <img
+              src={previewUrl}
+              alt="Preview"
+              className="h-20 w-20 object-cover rounded-lg"
+            />
+            {isUploading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-lg">
+                <Loader2 className="h-5 w-5 animate-spin text-white" />
+              </div>
+            )}
+            {uploadError && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-lg">
+                <AlertCircle className="h-5 w-5 text-red-400" />
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={removePhoto}
+              className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-destructive text-white flex items-center justify-center"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </div>
+          {uploadError && (
+            <div className="flex items-center gap-2 mt-1">
+              <p className="text-xs text-destructive">Ошибка загрузки</p>
+              <button
+                type="button"
+                onClick={retryUpload}
+                className="text-xs text-[#1e3a5f] underline"
+              >
+                Повторить
+              </button>
             </div>
           )}
-          <button
-            type="button"
-            onClick={removePhoto}
-            className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-destructive text-white flex items-center justify-center"
-          >
-            <X className="h-3 w-3" />
-          </button>
+          {uploadedUrl && (
+            <p className="text-xs text-green-600 mt-1">Фото загружено</p>
+          )}
         </div>
       )}
 
       {/* Input row */}
       <div className="flex items-end gap-2">
-        {/* Gallery button — выбрать из файлов/галереи */}
+        {/* Gallery button */}
         <Button
           type="button"
           variant="ghost"
@@ -113,7 +148,7 @@ export function ChatInput({ onSend, onUploadPhoto, disabled, isUploading }: Chat
           <ImagePlus className="h-5 w-5" />
         </Button>
 
-        {/* Camera button — сфоткать */}
+        {/* Camera button */}
         <Button
           type="button"
           variant="ghost"
