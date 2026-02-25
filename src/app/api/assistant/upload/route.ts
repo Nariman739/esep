@@ -14,7 +14,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Файл не найден" }, { status: 400 });
     }
 
-    if (!file.type.startsWith("image/")) {
+    const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/heic", "image/heif", "image/gif"];
+    const isImage = file.type.startsWith("image/") || allowedTypes.includes(file.type.toLowerCase());
+    if (!isImage) {
       return NextResponse.json(
         { error: "Только изображения" },
         { status: 400 }
@@ -29,12 +31,20 @@ export async function POST(request: Request) {
     }
 
     const timestamp = Date.now();
-    const ext = file.name.split(".").pop() || "jpg";
+    // Normalize HEIC to jpg extension for Blob storage
+    const rawExt = (file.name.split(".").pop() || "jpg").toLowerCase();
+    const ext = rawExt === "heic" || rawExt === "heif" ? "jpg" : rawExt;
     const path = `assistant/${master.id}/${sessionId || "unsorted"}/${timestamp}.${ext}`;
+
+    // Normalize HEIC content-type — Vercel Blob handles it better as jpeg
+    const contentType =
+      file.type === "image/heic" || file.type === "image/heif"
+        ? "image/jpeg"
+        : file.type || "image/jpeg";
 
     const blob = await put(path, file, {
       access: "public",
-      contentType: file.type,
+      contentType,
     });
 
     return NextResponse.json({ url: blob.url });
