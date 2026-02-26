@@ -7,6 +7,7 @@ import type {
   CalculationResult,
 } from "./types";
 import { PRODUCT_BY_CODE, DEFAULT_PRICES } from "./constants";
+import { computeArea, computePerimeter, getBoundingBoxMinDim } from "./room-geometry";
 
 type PriceMap = Record<string, number>;
 
@@ -60,7 +61,7 @@ function getCanvasCode(
   if (room.canvasType === "glyanets" || room.canvasType === "color") {
     return "canvas_over";
   }
-  const minDim = Math.min(room.length, room.width);
+  const minDim = getBoundingBoxMinDim(room);
   if (minDim <= 3.2) return "canvas_320";
   if (minDim <= 5.5) return "canvas_550";
   return "canvas_over";
@@ -111,8 +112,8 @@ function calculateRoomVariant(
   config: VariantConfig,
   prices: PriceMap
 ): RoomVariant {
-  const area = room.length * room.width;
-  const perimeter = 2 * (room.length + room.width);
+  const area = computeArea(room);
+  const perimeter = computePerimeter(room);
   const items: LineItem[] = [];
 
   // Canvas
@@ -199,9 +200,9 @@ export function calculate(
   rooms: RoomInput[],
   prices: PriceMap
 ): CalculationResult {
-  const totalArea = rooms.reduce((sum, r) => sum + r.length * r.width, 0);
+  const totalArea = rooms.reduce((sum, r) => sum + computeArea(r), 0);
   const totalPerimeter = rooms.reduce(
-    (sum, r) => sum + 2 * (r.length + r.width),
+    (sum, r) => sum + computePerimeter(r),
     0
   );
   const totalSpots = rooms.reduce((sum, r) => sum + r.spotsCount, 0);

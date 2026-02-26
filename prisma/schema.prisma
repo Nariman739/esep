@@ -29,8 +29,9 @@ model Master {
   whatsappPhone   String?
   address         String?
 
-  // Telegram link (future bot integration)
-  telegramChatId  String?  @unique
+  // Telegram integration
+  telegramChatId   String?  @unique
+  telegramLinkCode String?  @unique  // temp code for /start deep link
 
   // Subscription
   subscriptionTier SubscriptionTier @default(FREE)
@@ -103,6 +104,10 @@ model Estimate {
 
   // Status
   status          EstimateStatus @default(DRAFT)
+
+  // Variant selection
+  recommendedVariant String?  // "economy" | "standard" | "premium" — master sets this
+  confirmedVariant   String?  // which variant the client chose when confirming
 
   // PDF
   pdfUrl          String?

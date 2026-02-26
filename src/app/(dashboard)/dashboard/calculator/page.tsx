@@ -9,6 +9,7 @@ import { RoomCard } from "@/components/calculator/room-card";
 import { CalculationResults } from "@/components/calculator/calculation-results";
 import { SaveDialog } from "@/components/calculator/save-dialog";
 import { useCalculator } from "@/hooks/use-calculator";
+import { computeArea } from "@/lib/room-geometry";
 import { Plus, Calculator, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -148,7 +149,7 @@ export default function CalculatorPage() {
       {rooms.length > 0 && (
         <div className="flex flex-col items-center gap-2 pt-2">
           <p className="text-sm text-muted-foreground">
-            {rooms.length} комнат | {rooms.reduce((s, r) => s + r.length * r.width, 0).toFixed(1)} м²
+            {rooms.length} комнат | {rooms.reduce((s, r) => s + computeArea(r), 0).toFixed(1)} м²
           </p>
           <Button
             size="lg"

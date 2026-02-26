@@ -3,6 +3,7 @@ import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { KP_LIMITS } from "@/lib/constants";
 import type { CalculationResult, RoomInput } from "@/lib/types";
+import { computeArea } from "@/lib/room-geometry";
 
 export async function POST(request: Request) {
   try {
@@ -18,7 +19,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { sessionId, clientName, clientPhone, clientAddress } = body;
+    const { sessionId, clientName, clientPhone, clientAddress, recommendedVariant } = body;
 
     if (!sessionId) {
       return NextResponse.json(
@@ -48,7 +49,7 @@ export async function POST(request: Request) {
     const rooms = chatSession.extractedRooms as unknown as RoomInput[];
     const calc = chatSession.calculationData as unknown as CalculationResult;
 
-    const totalArea = rooms.reduce((s, r) => s + r.length * r.width, 0);
+    const totalArea = rooms.reduce((s, r) => s + computeArea(r), 0);
 
     const validUntil = new Date();
     validUntil.setDate(validUntil.getDate() + 14);
@@ -65,6 +66,7 @@ export async function POST(request: Request) {
         clientName: clientName || null,
         clientPhone: clientPhone || null,
         clientAddress: clientAddress || null,
+        recommendedVariant: recommendedVariant || "standard",
         validUntil,
       },
     });

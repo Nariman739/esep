@@ -4,8 +4,15 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Copy, Trash2 } from "lucide-react";
+import { computeArea, computePerimeter } from "@/lib/room-geometry";
 import type { RoomInput } from "@/lib/types";
 import { CANVAS_TYPES } from "@/lib/constants";
+
+const SHAPE_LABELS: Record<string, string> = {
+  "l-shape": "Г-образная",
+  "t-shape": "Т-образная",
+  square: "Квадрат",
+};
 
 interface RoomCardProps {
   room: RoomInput;
@@ -15,9 +22,15 @@ interface RoomCardProps {
 }
 
 export function RoomCard({ room, index, onDuplicate, onRemove }: RoomCardProps) {
-  const area = (room.length * room.width).toFixed(1);
-  const perimeter = (2 * (room.length + room.width)).toFixed(1);
+  const area = computeArea(room).toFixed(1);
+  const perimeter = computePerimeter(room).toFixed(1);
   const canvasLabel = CANVAS_TYPES.find((ct) => ct.value === room.canvasType)?.label ?? room.canvasType;
+  const shape = room.shape || "rectangle";
+  const shapeLabel = SHAPE_LABELS[shape];
+
+  // Display dimensions in cm
+  const lengthCm = Math.round(room.length * 100);
+  const widthCm = Math.round(room.width * 100);
 
   return (
     <Card>
@@ -32,20 +45,29 @@ export function RoomCard({ room, index, onDuplicate, onRemove }: RoomCardProps) 
               <Badge variant="secondary" className="text-xs">
                 {canvasLabel}
               </Badge>
+              {shapeLabel && (
+                <Badge variant="outline" className="text-xs">
+                  {shapeLabel}
+                </Badge>
+              )}
             </div>
             <div className="text-sm text-muted-foreground flex flex-wrap gap-x-3 gap-y-0.5">
-              <span>{room.length}×{room.width}м = {area} м²</span>
+              {(shape === "rectangle" || shape === "square") ? (
+                <span>{lengthCm}×{widthCm} см = {area} м²</span>
+              ) : (
+                <span>{area} м²</span>
+              )}
               <span>П: {perimeter} м.п.</span>
             </div>
             <div className="flex flex-wrap gap-2 mt-1.5 text-xs text-muted-foreground">
               {room.spotsCount > 0 && <span>Споты: {room.spotsCount}</span>}
               {room.chandelierCount > 0 && <span>Люстры: {room.chandelierCount}</span>}
               {room.cornersCount > 0 && <span>Углы: {room.cornersCount}</span>}
-              {room.curtainRodLength > 0 && <span>Карниз: {room.curtainRodLength} м.п.</span>}
+              {room.curtainRodLength > 0 && <span>Карниз: {Math.round(room.curtainRodLength * 100)} см</span>}
               {room.pipeBypasses > 0 && <span>Трубы: {room.pipeBypasses}</span>}
               {room.ceilingHeight > 3 && (
                 <Badge variant="destructive" className="text-xs">
-                  Высота {room.ceilingHeight}м (×1.3)
+                  Высота {Math.round(room.ceilingHeight * 100)} см (×1.3)
                 </Badge>
               )}
             </div>

@@ -1,12 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { formatPrice, formatDate, formatArea } from "@/lib/format";
-import type { CalculationResult, Variant } from "@/lib/types";
+import type { CalculationResult } from "@/lib/types";
+import { computeArea } from "@/lib/room-geometry";
 import type { Metadata } from "next";
-import { ConfirmButton } from "./confirm-button";
+import { ConfirmSection } from "./confirm-section";
 
 export async function generateMetadata({
   params,
@@ -26,43 +24,6 @@ export async function generateMetadata({
     title: `КП от ${company} | ${formatArea(estimate.totalArea)}`,
     description: `Коммерческое предложение на натяжные потолки от ${company}`,
   };
-}
-
-function VariantBlock({ variant }: { variant: Variant }) {
-  const isHit = variant.type === "standard";
-  const colors = {
-    economy: { accent: "text-green-600", bg: "bg-green-50", border: "border-green-200" },
-    standard: { accent: "text-[#1e3a5f]", bg: "bg-blue-50", border: "border-[#1e3a5f]" },
-    premium: { accent: "text-amber-600", bg: "bg-amber-50", border: "border-amber-300" },
-  }[variant.type];
-
-  return (
-    <Card className={`${colors.border} ${isHit ? "ring-2 ring-[#1e3a5f]/20" : ""}`}>
-      {isHit && (
-        <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-          <Badge className="bg-[#1e3a5f]">ХИТ</Badge>
-        </div>
-      )}
-      <CardHeader className={`pb-3 ${colors.bg} relative`}>
-        <CardTitle className={`text-lg ${colors.accent}`}>{variant.label}</CardTitle>
-        <p className="text-2xl sm:text-3xl font-bold">{formatPrice(variant.total)}</p>
-        <p className="text-sm text-muted-foreground">{formatPrice(variant.pricePerM2)}/м²</p>
-      </CardHeader>
-      <CardContent className="pt-3">
-        {variant.rooms.map((rv) => (
-          <div key={rv.roomId} className="mb-3 last:mb-0">
-            <p className="font-medium text-sm mb-1">{rv.roomName}</p>
-            {rv.items.map((item, i) => (
-              <div key={i} className="flex justify-between text-xs text-muted-foreground">
-                <span>{item.itemName}</span>
-                <span>{formatPrice(item.total)}</span>
-              </div>
-            ))}
-          </div>
-        ))}
-      </CardContent>
-    </Card>
-  );
 }
 
 export default async function PublicKpPage({
@@ -90,27 +51,21 @@ export default async function PublicKpPage({
 
   if (!estimate) notFound();
 
-  // Mark as viewed
+  // Mark as viewed (best-effort, non-blocking)
   if (estimate.status === "DRAFT" || estimate.status === "SENT") {
-    await prisma.estimate.update({
-      where: { id: estimate.id },
-      data: { status: "VIEWED" },
-    });
+    prisma.estimate
+      .update({ where: { id: estimate.id }, data: { status: "VIEWED" } })
+      .catch(() => {});
   }
-
-  const effectiveStatus =
-    estimate.status === "DRAFT" || estimate.status === "SENT"
-      ? "VIEWED"
-      : estimate.status;
 
   const calc = estimate.calculationData as unknown as CalculationResult;
   const master = estimate.master;
   const company = master.companyName || master.firstName;
+  const brandColor = master.brandColor || "#1e3a5f";
 
   const isExpired =
     estimate.validUntil ? new Date(estimate.validUntil) < new Date() : false;
 
-  // Initials: first letter of each word, max 2
   const initials = company
     .split(" ")
     .map((w: string) => w[0])
@@ -119,134 +74,231 @@ export default async function PublicKpPage({
     .toUpperCase();
 
   return (
-    <div className="max-w-4xl mx-auto p-4 md:p-8">
-      {/* Header */}
-      <div className="text-center mb-8">
-        {master.logoUrl ? (
-          <img
-            src={master.logoUrl}
-            alt={company}
-            className="h-16 w-16 rounded-xl object-cover mx-auto mb-3"
-          />
-        ) : (
-          <div
-            className="inline-flex h-16 w-16 items-center justify-center rounded-xl text-white font-bold text-xl mb-3"
-            style={{ backgroundColor: master.brandColor }}
-          >
-            {initials}
+    <div className="min-h-screen bg-gray-50">
+
+      {/* ── HERO ── */}
+      <div
+        className="relative overflow-hidden"
+        style={{
+          background: `linear-gradient(135deg, #0f172a 0%, ${brandColor} 100%)`,
+        }}
+      >
+        {/* Dot grid texture */}
+        <div
+          className="absolute inset-0 opacity-10"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle at 1px 1px, white 1px, transparent 0)",
+            backgroundSize: "32px 32px",
+          }}
+        />
+
+        <div className="relative z-10 text-center py-10 px-6 pb-14">
+          {/* Logo / Initials */}
+          {master.logoUrl ? (
+            <img
+              src={master.logoUrl}
+              alt={company}
+              className="h-20 w-20 rounded-2xl object-cover mx-auto mb-4 ring-4 ring-white/20 shadow-xl"
+            />
+          ) : (
+            <div
+              className="inline-flex h-20 w-20 items-center justify-center rounded-2xl text-white font-bold text-2xl mb-4 ring-4 ring-white/20 shadow-xl"
+              style={{ backgroundColor: `${brandColor}cc` }}
+            >
+              {initials}
+            </div>
+          )}
+
+          <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight">
+            {company}
+          </h1>
+          <p className="text-white/60 text-xs mt-1 uppercase tracking-widest font-medium">
+            Коммерческое предложение
+          </p>
+
+          {/* Info pills */}
+          <div className="flex flex-wrap justify-center gap-2 mt-5">
+            {estimate.clientName && (
+              <span className="bg-white/10 backdrop-blur-sm text-white text-sm px-3 py-1.5 rounded-full border border-white/20">
+                👤 {estimate.clientName}
+              </span>
+            )}
+            <span className="bg-white/10 backdrop-blur-sm text-white text-sm px-3 py-1.5 rounded-full border border-white/20">
+              📐 {formatArea(estimate.totalArea)}
+            </span>
+            <span className="bg-white/10 backdrop-blur-sm text-white text-sm px-3 py-1.5 rounded-full border border-white/20">
+              📅 {formatDate(estimate.createdAt)}
+            </span>
+            {estimate.validUntil && (
+              <span
+                className={`text-sm px-3 py-1.5 rounded-full border backdrop-blur-sm ${
+                  isExpired
+                    ? "bg-red-500/30 text-red-200 border-red-400/40"
+                    : "bg-white/10 text-white border-white/20"
+                }`}
+              >
+                {isExpired
+                  ? "⚠️ Срок истёк"
+                  : `до ${formatDate(estimate.validUntil)}`}
+              </span>
+            )}
+            {estimate.confirmedVariant && (
+              <span className="bg-emerald-500/30 text-emerald-200 text-sm px-3 py-1.5 rounded-full border border-emerald-400/40">
+                ✅ Принято
+              </span>
+            )}
           </div>
-        )}
-        <h1 className="text-2xl md:text-3xl font-bold">{company}</h1>
-        <p className="text-muted-foreground">Коммерческое предложение</p>
-        <p className="text-sm text-muted-foreground mt-1">
-          {formatDate(estimate.createdAt)} | {formatArea(estimate.totalArea)}
-        </p>
-        {estimate.clientName && (
-          <p className="text-sm mt-2">
-            Для: <span className="font-medium">{estimate.clientName}</span>
-          </p>
-        )}
-        {estimate.validUntil && (
-          <p
-            className={`text-sm mt-2 font-medium ${
-              isExpired ? "text-red-500" : "text-muted-foreground"
-            }`}
-          >
-            {isExpired
-              ? "Срок предложения истёк"
-              : `Действительно до ${formatDate(estimate.validUntil)}`}
-          </p>
-        )}
+
+          {/* Price summary strip */}
+          <div className="mt-6 flex justify-center gap-6 flex-wrap">
+            {calc.variants.map((v) => (
+              <div key={v.type} className="text-center">
+                <p className="text-white/50 text-xs mb-0.5">{v.label}</p>
+                <p className="text-white font-bold text-xl leading-none">
+                  {formatPrice(v.total)}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Bottom wave */}
+        <svg
+          className="absolute bottom-0 left-0 right-0 w-full"
+          viewBox="0 0 1440 32"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          preserveAspectRatio="none"
+        >
+          <path d="M0 32L1440 32L1440 8C1200 32 960 8 720 8C480 8 240 32 0 8L0 32Z" fill="#f9fafb" />
+        </svg>
       </div>
 
-      {/* Rooms */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="text-lg">Помещения</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {calc.rooms.map((room, i) => (
-            <div
-              key={i}
-              className="flex flex-col sm:flex-row sm:justify-between text-sm py-2 border-b last:border-0 gap-0.5"
-            >
-              <span className="font-medium">{room.name}</span>
-              <span className="text-muted-foreground">
-                {room.length}×{room.width}м = {(room.length * room.width).toFixed(1)} м²
+      {/* ── VARIANTS ── */}
+      <section className="pt-6 pb-6">
+        <h2 className="text-lg font-bold text-gray-900 mb-4 px-4">
+          Варианты стоимости
+        </h2>
+        <ConfirmSection
+          estimateId={estimate.id}
+          variants={calc.variants}
+          recommendedVariant={estimate.recommendedVariant}
+          initialConfirmedVariant={estimate.confirmedVariant}
+          brandColor={brandColor}
+        />
+      </section>
+
+      {/* ── ROOMS ── */}
+      {calc.rooms && calc.rooms.length > 0 && (
+        <section className="px-4 pb-6">
+          <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+            <div className="px-4 py-3 border-b border-gray-100 bg-gray-50/80">
+              <h2 className="font-semibold text-gray-900 text-base">
+                Объект —{" "}
+                {calc.rooms.length === 1
+                  ? "1 помещение"
+                  : calc.rooms.length < 5
+                  ? `${calc.rooms.length} помещения`
+                  : `${calc.rooms.length} помещений`}
+              </h2>
+            </div>
+            <div className="divide-y divide-gray-100">
+              {calc.rooms.map((room, i) => {
+                const area = computeArea(room);
+                const shape = room.shape || "rectangle";
+                const dimLabel = (shape === "rectangle" || shape === "square")
+                  ? `${Math.round(room.length * 100)}×${Math.round(room.width * 100)} см`
+                  : shape === "l-shape" ? "Г-образная" : shape === "t-shape" ? "Т-образная" : "";
+                return (
+                  <div
+                    key={i}
+                    className="flex items-center justify-between px-4 py-3"
+                  >
+                    <span className="font-medium text-sm text-gray-900">
+                      {room.name}
+                    </span>
+                    <div className="text-right">
+                      <span className="text-sm text-gray-500">
+                        {dimLabel} ={" "}
+                        <span className="font-semibold text-gray-700">
+                          {area.toFixed(1)} м²
+                        </span>
+                      </span>
+                      {room.spotsCount > 0 && (
+                        <p className="text-xs text-gray-400">
+                          💡 {room.spotsCount} спотов
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="px-4 py-3 border-t border-gray-200 bg-gray-50/80 flex justify-between">
+              <span className="text-sm font-semibold text-gray-700">Итого</span>
+              <span className="text-sm font-bold text-gray-900">
+                {formatArea(estimate.totalArea)}
               </span>
             </div>
-          ))}
-          <div className="flex justify-between font-semibold text-sm pt-3 mt-1 border-t">
-            <span>Итого</span>
-            <span>{formatArea(estimate.totalArea)}</span>
           </div>
-        </CardContent>
-      </Card>
+        </section>
+      )}
 
-      {/* Variants */}
-      <h2 className="text-xl font-bold mb-4">Варианты стоимости</h2>
-      <div className="grid gap-4 md:grid-cols-3 mb-6">
-        {calc.variants.map((v) => (
-          <VariantBlock key={v.type} variant={v} />
-        ))}
-      </div>
+      {/* ── CONTACT ── */}
+      {(master.whatsappPhone || master.instagramUrl) && (
+        <section className="px-4 pb-6">
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 text-center">
+            <p className="font-semibold text-gray-900 mb-4">
+              Остались вопросы?
+            </p>
+            <div className="flex flex-wrap justify-center gap-3">
+              {master.whatsappPhone && (
+                <a
+                  href={`tel:${master.whatsappPhone}`}
+                  className="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  📞 Позвонить
+                </a>
+              )}
+              {master.whatsappPhone && (
+                <a
+                  href={`https://wa.me/${master.whatsappPhone.replace(/\D/g, "")}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 text-white px-4 py-2.5 text-sm font-medium hover:bg-emerald-600 transition-colors shadow-sm"
+                >
+                  💬 WhatsApp
+                </a>
+              )}
+              {master.instagramUrl && (
+                <a
+                  href={
+                    master.instagramUrl.startsWith("http")
+                      ? master.instagramUrl
+                      : `https://instagram.com/${master.instagramUrl.replace("@", "")}`
+                  }
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  📷 Instagram
+                </a>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
 
-      {/* Confirm button */}
-      <div className="text-center my-8">
-        <ConfirmButton
-          estimateId={estimate.id}
-          initialConfirmed={effectiveStatus === "CONFIRMED"}
-        />
-      </div>
-
-      <Separator className="my-6" />
-
-      {/* Contact */}
-      <div className="text-center space-y-3">
-        <h3 className="font-semibold text-lg">Связаться</h3>
-        <div className="flex flex-col sm:flex-row flex-wrap justify-center gap-3">
-          {master.whatsappPhone && (
-            <a
-              href={`tel:${master.whatsappPhone}`}
-              className="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm hover:bg-muted transition-colors"
-            >
-              📞 Позвонить
-            </a>
-          )}
-          {master.whatsappPhone && (
-            <a
-              href={`https://wa.me/${master.whatsappPhone.replace(/\D/g, "")}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-lg bg-green-600 text-white px-4 py-2 text-sm hover:bg-green-700 transition-colors"
-            >
-              WhatsApp
-            </a>
-          )}
-          {master.instagramUrl && (
-            <a
-              href={
-                master.instagramUrl.startsWith("http")
-                  ? master.instagramUrl
-                  : `https://instagram.com/${master.instagramUrl.replace("@", "")}`
-              }
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm hover:bg-muted transition-colors"
-            >
-              📷 Instagram
-            </a>
-          )}
-        </div>
-      </div>
-
-      {/* Footer */}
-      <div className="text-center mt-8 pt-4 border-t">
-        <p className="text-xs text-muted-foreground">
-          * Расчёт предварительный. Точная стоимость после замера.
+      {/* ── FOOTER ── */}
+      <footer className="px-4 pb-10 text-center space-y-2">
+        <p className="text-xs text-gray-400">
+          * Расчёт предварительный. Точная стоимость определяется после замера.
         </p>
-        <p className="text-xs text-muted-foreground/40 mt-3">Создано в PotolokAI</p>
-      </div>
+        <p className="text-xs font-medium" style={{ color: `${brandColor}99` }}>
+          Создано в PotolokAI
+        </p>
+      </footer>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,20 +16,39 @@ import type { ClientInfo } from "@/lib/types";
 interface SaveKpDialogProps {
   open: boolean;
   onClose: () => void;
-  onSave: (data: ClientInfo) => Promise<void>;
+  onSave: (data: ClientInfo & { recommendedVariant: string }) => Promise<void>;
   prefilled?: ClientInfo | null;
 }
+
+const VARIANTS = [
+  { value: "economy", label: "Эконом" },
+  { value: "standard", label: "Стандарт" },
+  { value: "premium", label: "Премиум" },
+];
 
 export function SaveKpDialog({ open, onClose, onSave, prefilled }: SaveKpDialogProps) {
   const [name, setName] = useState(prefilled?.name || "");
   const [phone, setPhone] = useState(prefilled?.phone || "");
   const [address, setAddress] = useState(prefilled?.address || "");
+  const [recommendedVariant, setRecommendedVariant] = useState("standard");
   const [saving, setSaving] = useState(false);
+
+  // Sync fields when prefilled data arrives after dialog is already open
+  useEffect(() => {
+    if (prefilled?.name) setName(prefilled.name);
+    if (prefilled?.phone) setPhone(prefilled.phone);
+    if (prefilled?.address) setAddress(prefilled.address);
+  }, [prefilled]);
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      await onSave({ name: name.trim() || undefined, phone: phone.trim() || undefined, address: address.trim() || undefined });
+      await onSave({
+        name: name.trim() || undefined,
+        phone: phone.trim() || undefined,
+        address: address.trim() || undefined,
+        recommendedVariant,
+      });
     } finally {
       setSaving(false);
     }
@@ -43,6 +62,31 @@ export function SaveKpDialog({ open, onClose, onSave, prefilled }: SaveKpDialogP
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Recommended variant selector */}
+          <div className="space-y-2">
+            <Label>Рекомендуемый вариант</Label>
+            <div className="flex gap-2">
+              {VARIANTS.map((v) => (
+                <button
+                  key={v.value}
+                  type="button"
+                  onClick={() => setRecommendedVariant(v.value)}
+                  className={[
+                    "flex-1 py-2 rounded-lg border text-sm font-medium transition-colors",
+                    recommendedVariant === v.value
+                      ? "bg-[#1e3a5f] border-[#1e3a5f] text-white"
+                      : "border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50",
+                  ].join(" ")}
+                >
+                  {v.label}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Этот вариант будет выделен в КП как рекомендованный
+            </p>
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="kp-name">Имя клиента</Label>
             <Input

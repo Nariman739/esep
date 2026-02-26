@@ -160,6 +160,15 @@ export function useAssistant(): UseAssistantReturn {
                   );
                   break;
 
+                case "clear_analyzing":
+                  // Vision extraction done — clear "Анализирую..." indicator
+                  setMessages((prev) =>
+                    prev.map((m) =>
+                      m.id === assistantId ? { ...m, content: "" } : m
+                    )
+                  );
+                  break;
+
                 case "client_data":
                   setClientData(event.data);
                   break;

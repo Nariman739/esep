@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Camera, ImagePlus, Send, X, Loader2, AlertCircle } from "lucide-react";
+import { Camera, ImagePlus, Send, X, Loader2, AlertCircle, Mic, MicOff } from "lucide-react";
 
 interface ChatInputProps {
   onSend: (text: string, imageUrl?: string) => void;
@@ -16,9 +16,19 @@ export function ChatInput({ onSend, onUploadPhoto, disabled, isUploading }: Chat
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [voiceSupported, setVoiceSupported] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const recognitionRef = useRef<any>(null);
+
+  useEffect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const w = window as any;
+    setVoiceSupported(!!(w.SpeechRecognition || w.webkitSpeechRecognition));
+  }, []);
 
   const handleSubmit = useCallback(() => {
     const trimmed = text.trim();
@@ -53,21 +63,17 @@ export function ChatInput({ onSend, onUploadPhoto, disabled, isUploading }: Chat
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Show local preview immediately
     const localUrl = URL.createObjectURL(file);
     setPreviewUrl(localUrl);
     setUploadError(false);
     setUploadedUrl(null);
 
-    // Reset input so same file can be selected again
     e.target.value = "";
 
-    // Upload
     const url = await onUploadPhoto(file);
     if (url) {
       setUploadedUrl(url);
     } else {
-      // Keep preview but show error
       setUploadError(true);
     }
   };
@@ -80,11 +86,50 @@ export function ChatInput({ onSend, onUploadPhoto, disabled, isUploading }: Chat
   };
 
   const retryUpload = () => {
-    // Re-open gallery to select again
     setPreviewUrl(null);
     setUploadedUrl(null);
     setUploadError(false);
     galleryInputRef.current?.click();
+  };
+
+  const toggleVoice = () => {
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+      return;
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const w = window as any;
+    const SpeechRecognition = w.SpeechRecognition || w.webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "ru-RU";
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setText((prev) => (prev ? prev + " " + transcript : transcript));
+      setIsListening(false);
+      // Auto-resize textarea
+      setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.style.height = "auto";
+          textareaRef.current.style.height =
+            Math.min(textareaRef.current.scrollHeight, 120) + "px";
+        }
+      }, 0);
+    };
+
+    recognition.onerror = () => setIsListening(false);
+    recognition.onend = () => setIsListening(false);
+
+    recognition.start();
+    recognitionRef.current = recognition;
+    setIsListening(true);
   };
 
   return (
@@ -135,7 +180,7 @@ export function ChatInput({ onSend, onUploadPhoto, disabled, isUploading }: Chat
       )}
 
       {/* Input row */}
-      <div className="flex items-end gap-2">
+      <div className="flex items-end gap-1.5">
         {/* Gallery button */}
         <Button
           type="button"
@@ -160,6 +205,28 @@ export function ChatInput({ onSend, onUploadPhoto, disabled, isUploading }: Chat
           <Camera className="h-5 w-5" />
         </Button>
 
+        {/* Voice button (only if supported) */}
+        {voiceSupported && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className={`h-10 w-10 shrink-0 transition-colors ${
+              isListening
+                ? "text-red-500 bg-red-50 hover:bg-red-100"
+                : ""
+            }`}
+            disabled={disabled}
+            onClick={toggleVoice}
+          >
+            {isListening ? (
+              <MicOff className="h-5 w-5 animate-pulse" />
+            ) : (
+              <Mic className="h-5 w-5" />
+            )}
+          </Button>
+        )}
+
         {/* Hidden file inputs */}
         <input
           ref={galleryInputRef}
@@ -183,10 +250,12 @@ export function ChatInput({ onSend, onUploadPhoto, disabled, isUploading }: Chat
           value={text}
           onChange={handleTextChange}
           onKeyDown={handleKeyDown}
-          placeholder="Размеры или вопрос..."
+          placeholder={isListening ? "Говорите..." : "Размеры или вопрос..."}
           disabled={disabled}
           rows={1}
-          className="flex-1 resize-none rounded-xl border bg-muted/50 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/20 min-h-[44px] max-h-[120px]"
+          className={`flex-1 resize-none rounded-xl border bg-muted/50 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/20 min-h-[44px] max-h-[120px] transition-colors ${
+            isListening ? "border-red-300 bg-red-50/50" : ""
+          }`}
         />
 
         {/* Send button */}

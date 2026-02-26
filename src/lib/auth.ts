@@ -82,6 +82,7 @@ export async function getCurrentMaster(): Promise<MasterProfile | null> {
     address: m.address,
     subscriptionTier: m.subscriptionTier,
     kpGeneratedThisMonth: m.kpGeneratedThisMonth,
+    telegramChatId: m.telegramChatId,
   };
 }
 

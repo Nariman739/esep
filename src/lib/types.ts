@@ -1,6 +1,26 @@
 import type { CanvasType } from "./constants";
 
 // ============================================
+// Room Shapes
+// ============================================
+
+export type RoomShape = "rectangle" | "square" | "l-shape" | "t-shape";
+
+export interface LShapeDimensions {
+  a: number; // top width (meters)
+  b: number; // right arm height (meters)
+  c: number; // total left height (meters)
+  d: number; // bottom width (meters)
+}
+
+export interface TShapeDimensions {
+  a: number; // top width (meters)
+  b: number; // top height (meters)
+  c: number; // stem width (meters)
+  d: number; // stem height (meters)
+}
+
+// ============================================
 // Room Input
 // ============================================
 
@@ -19,6 +39,9 @@ export interface RoomInput {
   pipeBypasses: number;
   cornersCount: number;
   eurobrusCount: number;
+  shape?: RoomShape;
+  lShapeDims?: LShapeDimensions;
+  tShapeDims?: TShapeDimensions;
 }
 
 // ============================================
@@ -115,4 +138,5 @@ export interface MasterProfile {
   address?: string | null;
   subscriptionTier: "FREE" | "PRO";
   kpGeneratedThisMonth: number;
+  telegramChatId?: string | null;
 }

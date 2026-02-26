@@ -7,13 +7,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Save, Loader2 } from "lucide-react";
+import { Save, Loader2, Send, CheckCircle2, Link2Off, RefreshCw } from "lucide-react";
 import type { MasterProfile } from "@/lib/types";
+
+const BOT_USERNAME = "potolokaiBot";
 
 export default function ProfilePage() {
   const [master, setMaster] = useState<MasterProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  // Telegram linking state
+  const [tgLinked, setTgLinked] = useState(false);
+  const [tgLinkCode, setTgLinkCode] = useState<string | null>(null);
+  const [tgLoading, setTgLoading] = useState(false);
 
   // Form state
   const [firstName, setFirstName] = useState("");
@@ -40,6 +47,12 @@ export default function ProfilePage() {
         setAddress(data.address || "");
       })
       .finally(() => setLoading(false));
+
+    // Check Telegram link status
+    fetch("/api/telegram/link-code")
+      .then((r) => r.json())
+      .then((data) => setTgLinked(data.linked ?? false))
+      .catch(() => {});
   }, []);
 
   async function handleSave() {
@@ -65,6 +78,33 @@ export default function ProfilePage() {
       toast.error("Ошибка сохранения");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleGenerateCode() {
+    setTgLoading(true);
+    try {
+      const res = await fetch("/api/telegram/link-code", { method: "POST" });
+      const data = await res.json();
+      if (data.code) setTgLinkCode(data.code);
+    } catch {
+      toast.error("Ошибка генерации кода");
+    } finally {
+      setTgLoading(false);
+    }
+  }
+
+  async function handleUnlink() {
+    setTgLoading(true);
+    try {
+      await fetch("/api/telegram/link-code", { method: "DELETE" });
+      setTgLinked(false);
+      setTgLinkCode(null);
+      toast.success("Telegram отвязан");
+    } catch {
+      toast.error("Ошибка");
+    } finally {
+      setTgLoading(false);
     }
   }
 
@@ -105,6 +145,83 @@ export default function ProfilePage() {
             <Label>Email</Label>
             <Input value={master?.email || ""} disabled className="bg-muted" />
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Telegram notifications */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Telegram уведомления</CardTitle>
+          <CardDescription>
+            Получайте уведомления когда клиент принимает КП
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {tgLinked ? (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-green-700">
+                <CheckCircle2 className="h-5 w-5" />
+                <span className="text-sm font-medium">Telegram подключён</span>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleUnlink}
+                disabled={tgLoading}
+              >
+                <Link2Off className="h-4 w-4 mr-2" />
+                Отвязать
+              </Button>
+            </div>
+          ) : tgLinkCode ? (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Нажмите кнопку ниже — откроется бот. Нажмите{" "}
+                <strong>Start / Начать</strong> и аккаунт привяжется автоматически.
+              </p>
+              <Button
+                className="w-full bg-[#229ED9] hover:bg-[#1a8fc4] text-white"
+                onClick={() =>
+                  window.open(
+                    `https://t.me/${BOT_USERNAME}?start=${tgLinkCode}`,
+                    "_blank"
+                  )
+                }
+              >
+                <Send className="h-4 w-4 mr-2" />
+                Открыть @{BOT_USERNAME}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full text-muted-foreground"
+                onClick={handleGenerateCode}
+                disabled={tgLoading}
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Новый код
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Привяжите Telegram, чтобы получать мгновенные уведомления
+                когда клиент принимает ваше КП.
+              </p>
+              <Button
+                variant="outline"
+                onClick={handleGenerateCode}
+                disabled={tgLoading}
+              >
+                {tgLoading ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4 mr-2" />
+                )}
+                Привязать Telegram
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
