@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, ExternalLink } from "lucide-react";
+import { ArrowLeft, ExternalLink, RefreshCcw } from "lucide-react";
 import { formatPrice, formatDate, formatArea } from "@/lib/format";
 import type { CalculationResult } from "@/lib/types";
 import { computeArea } from "@/lib/room-geometry";
@@ -82,6 +82,12 @@ export default async function EstimateDetailPage({
             <ExternalLink className="h-4 w-4 mr-2" />
             Открыть КП
           </a>
+        </Button>
+        <Button variant="outline" size="sm" asChild>
+          <Link href={`/dashboard/calculator?from=${estimate.id}`}>
+            <RefreshCcw className="h-4 w-4 mr-2" />
+            Пересчитать
+          </Link>
         </Button>
         <EstimateActions
           publicId={estimate.publicId}

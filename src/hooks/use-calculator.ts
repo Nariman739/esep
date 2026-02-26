@@ -73,6 +73,13 @@ export function useCalculator() {
     }
   }, [rooms]);
 
+  const loadRooms = useCallback((importedRooms: RoomInput[]) => {
+    // Give fresh IDs to avoid collisions
+    setRooms(importedRooms.map((r) => ({ ...r, id: crypto.randomUUID() })));
+    setResult(null);
+    setError(null);
+  }, []);
+
   const reset = useCallback(() => {
     setRooms([]);
     setResult(null);
@@ -90,5 +97,6 @@ export function useCalculator() {
     duplicateRoom,
     calculate,
     reset,
+    loadRooms,
   };
 }

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState, useEffect, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RoomForm } from "@/components/calculator/room-form";
@@ -12,9 +12,25 @@ import { useCalculator } from "@/hooks/use-calculator";
 import { computeArea } from "@/lib/room-geometry";
 import { Plus, Calculator, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import type { RoomInput } from "@/lib/types";
 
 export default function CalculatorPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      }
+    >
+      <CalculatorContent />
+    </Suspense>
+  );
+}
+
+function CalculatorContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const {
     rooms,
     result,
@@ -25,12 +41,36 @@ export default function CalculatorPage() {
     duplicateRoom,
     calculate,
     reset,
+    loadRooms,
   } = useCalculator();
 
   const [showForm, setShowForm] = useState(rooms.length === 0);
   const [saveOpen, setSaveOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [priceMap, setPriceMap] = useState<Record<string, number>>({});
+  const [loadingFrom, setLoadingFrom] = useState(false);
+  const loadedRef = useRef(false);
+
+  // Load rooms from existing estimate (?from=estimateId)
+  useEffect(() => {
+    const fromId = searchParams.get("from");
+    if (!fromId || loadedRef.current) return;
+    loadedRef.current = true;
+    setLoadingFrom(true);
+    fetch(`/api/estimates/${fromId}`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((est) => {
+        if (!est) return;
+        const importedRooms: RoomInput[] = est.roomsData ?? est.calculationData?.rooms ?? [];
+        if (importedRooms.length > 0) {
+          loadRooms(importedRooms);
+          setShowForm(false);
+          toast.success(`Загружено ${importedRooms.length} комнат — редактируйте и пересчитайте`);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoadingFrom(false));
+  }, [searchParams, loadRooms]);
 
   useEffect(() => {
     fetch("/api/prices")
@@ -76,6 +116,16 @@ export default function CalculatorPage() {
       setSaving(false);
       setSaveOpen(false);
     }
+  }
+
+  // Loading rooms from existing estimate
+  if (loadingFrom) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 gap-3">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <p className="text-sm text-muted-foreground">Загружаем комнаты...</p>
+      </div>
+    );
   }
 
   // Show results if we have them
