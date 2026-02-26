@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { formatPrice, formatDateShort } from "@/lib/format";
 import { KP_LIMITS } from "@/lib/constants";
+import { FeedbackButton } from "@/components/feedback-button";
 
 export const metadata = {
   title: "Дашборд",
@@ -292,6 +293,11 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Feedback - visible on mobile where sidebar is hidden */}
+      <div className="flex justify-center pt-2 pb-4 md:hidden">
+        <FeedbackButton variant="compact" />
+      </div>
     </div>
   );
 }

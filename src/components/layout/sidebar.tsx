@@ -12,6 +12,7 @@ import {
   LogOut,
   MessageSquare,
 } from "lucide-react";
+import { FeedbackButton } from "@/components/feedback-button";
 
 const navItems = [
   { href: "/dashboard", label: "Главная", icon: LayoutDashboard },
@@ -58,7 +59,8 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="border-t p-3">
+      <div className="border-t p-3 space-y-1">
+        <FeedbackButton variant="sidebar" />
         <form action="/api/auth/logout" method="POST">
           <button
             type="submit"
