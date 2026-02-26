@@ -1,21 +1,21 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Share2, MessageCircle, Check } from "lucide-react";
+import { Share2, MessageCircle, Check, Trash2, Download } from "lucide-react";
+import { toast } from "sonner";
 
 interface EstimateActionsProps {
+  estimateId: string;
   publicId: string;
   clientPhone?: string | null;
 }
 
-export function EstimateActions({ publicId, clientPhone }: EstimateActionsProps) {
+export function EstimateActions({ estimateId, publicId, clientPhone }: EstimateActionsProps) {
+  const router = useRouter();
   const [copied, setCopied] = useState(false);
-
-  const publicUrl =
-    typeof window !== "undefined"
-      ? `${window.location.origin}/kp/${publicId}`
-      : `/kp/${publicId}`;
+  const [deleting, setDeleting] = useState(false);
 
   const handleCopy = async () => {
     try {
@@ -24,7 +24,6 @@ export function EstimateActions({ publicId, clientPhone }: EstimateActionsProps)
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // fallback
       const el = document.createElement("input");
       el.value = `${window.location.origin}/kp/${publicId}`;
       document.body.appendChild(el);
@@ -46,6 +45,24 @@ export function EstimateActions({ publicId, clientPhone }: EstimateActionsProps)
     window.open(waUrl, "_blank");
   };
 
+  const handleDelete = async () => {
+    if (!confirm("Удалить этот расчёт? Это действие нельзя отменить.")) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/estimates/${estimateId}`, { method: "DELETE" });
+      if (res.ok) {
+        toast.success("Расчёт удалён");
+        router.push("/dashboard/estimates");
+      } else {
+        toast.error("Ошибка удаления");
+      }
+    } catch {
+      toast.error("Ошибка соединения");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <div className="flex flex-wrap gap-3">
       <Button variant="outline" size="sm" onClick={handleCopy}>
@@ -63,7 +80,23 @@ export function EstimateActions({ publicId, clientPhone }: EstimateActionsProps)
       </Button>
       <Button variant="outline" size="sm" onClick={handleWhatsApp}>
         <MessageCircle className="h-4 w-4 mr-2 text-green-600" />
-        Отправить в WhatsApp
+        WhatsApp
+      </Button>
+      <Button variant="outline" size="sm" asChild>
+        <a href={`/api/estimates/${estimateId}/pdf`} download>
+          <Download className="h-4 w-4 mr-2" />
+          Скачать
+        </a>
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={handleDelete}
+        disabled={deleting}
+        className="text-destructive hover:text-destructive"
+      >
+        <Trash2 className="h-4 w-4 mr-2" />
+        {deleting ? "Удаляем..." : "Удалить"}
       </Button>
     </div>
   );

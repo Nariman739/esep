@@ -43,6 +43,7 @@ interface RoomFormProps {
   onAdd: (room: RoomInput) => void;
   onCancel?: () => void;
   priceMap?: Record<string, number>;
+  editRoom?: RoomInput;
 }
 
 function formatPriceCompact(n: number): string {
@@ -57,47 +58,49 @@ const SHAPE_OPTIONS: { value: RoomShape; label: string; icon: string }[] = [
   { value: "t-shape", label: "Т-образная", icon: "Т" },
 ];
 
-export function RoomForm({ onAdd, onCancel, priceMap }: RoomFormProps) {
+export function RoomForm({ onAdd, onCancel, priceMap, editRoom }: RoomFormProps) {
   const prices = priceMap ?? DEFAULT_PRICES;
-  const [name, setName] = useState("");
-  const [shape, setShape] = useState<RoomShape>("rectangle");
+  const er = editRoom; // shorthand
 
-  // Rectangle/Square dims (cm)
-  const [length, setLength] = useState("");
-  const [width, setWidth] = useState("");
-  const [side, setSide] = useState(""); // for square
+  const [name, setName] = useState(er?.name ?? "");
+  const [shape, setShape] = useState<RoomShape>(er?.shape ?? "rectangle");
+
+  // Rectangle/Square dims (cm) — convert from meters
+  const [length, setLength] = useState(er && (er.shape === "rectangle" || !er.shape) ? String(Math.round(er.length * 100)) : "");
+  const [width, setWidth] = useState(er && (er.shape === "rectangle" || !er.shape) ? String(Math.round(er.width * 100)) : "");
+  const [side, setSide] = useState(er?.shape === "square" ? String(Math.round(er.length * 100)) : "");
 
   // L-shape dims (cm)
-  const [lA, setLA] = useState("");
-  const [lB, setLB] = useState("");
-  const [lC, setLC] = useState("");
-  const [lD, setLD] = useState("");
+  const [lA, setLA] = useState(er?.lShapeDims ? String(Math.round(er.lShapeDims.a * 100)) : "");
+  const [lB, setLB] = useState(er?.lShapeDims ? String(Math.round(er.lShapeDims.b * 100)) : "");
+  const [lC, setLC] = useState(er?.lShapeDims ? String(Math.round(er.lShapeDims.c * 100)) : "");
+  const [lD, setLD] = useState(er?.lShapeDims ? String(Math.round(er.lShapeDims.d * 100)) : "");
 
   // T-shape dims (cm)
-  const [tA, setTA] = useState("");
-  const [tB, setTB] = useState("");
-  const [tC, setTC] = useState("");
-  const [tD, setTD] = useState("");
+  const [tA, setTA] = useState(er?.tShapeDims ? String(Math.round(er.tShapeDims.a * 100)) : "");
+  const [tB, setTB] = useState(er?.tShapeDims ? String(Math.round(er.tShapeDims.b * 100)) : "");
+  const [tC, setTC] = useState(er?.tShapeDims ? String(Math.round(er.tShapeDims.c * 100)) : "");
+  const [tD, setTD] = useState(er?.tShapeDims ? String(Math.round(er.tShapeDims.d * 100)) : "");
 
   // Active side for SVG highlight
   const [activeSide, setActiveSide] = useState<"a" | "b" | "c" | "d" | null>(null);
 
   // Common fields
-  const [ceilingHeight, setCeilingHeight] = useState("300");
-  const [canvasType, setCanvasType] = useState<CanvasType>("mat");
-  const [spotsCount, setSpotsCount] = useState("0");
-  const [chandelierCount, setChandelierCount] = useState("0");
-  const [cornersCount, setCornersCount] = useState("4");
-  const [curtainRodLength, setCurtainRodLength] = useState("0");
-  const [pipeBypasses, setPipeBypasses] = useState("0");
+  const [ceilingHeight, setCeilingHeight] = useState(er ? String(Math.round(er.ceilingHeight * 100)) : "300");
+  const [canvasType, setCanvasType] = useState<CanvasType>(er?.canvasType ?? "mat");
+  const [spotsCount, setSpotsCount] = useState(er ? String(er.spotsCount) : "0");
+  const [chandelierCount, setChandelierCount] = useState(er ? String(er.chandelierCount) : "0");
+  const [cornersCount, setCornersCount] = useState(er ? String(er.cornersCount) : "4");
+  const [curtainRodLength, setCurtainRodLength] = useState(er ? String(Math.round(er.curtainRodLength * 100)) : "0");
+  const [pipeBypasses, setPipeBypasses] = useState(er ? String(er.pipeBypasses) : "0");
   const [shapeError, setShapeError] = useState<string | null>(null);
 
   // Component selection
-  const [profileType, setProfileType] = useState("profile_insert");
-  const [spotType, setSpotType] = useState("spot_ours");
+  const [profileType, setProfileType] = useState(er?.profileType ?? "profile_insert");
+  const [spotType, setSpotType] = useState(er?.spotType ?? "spot_ours");
   // Corner type auto-determined by profile
-  const [curtainType, setCurtainType] = useState("curtain_ldsp");
-  const [includeTransformer, setIncludeTransformer] = useState(true);
+  const [curtainType, setCurtainType] = useState(er?.curtainType ?? "curtain_ldsp");
+  const [includeTransformer, setIncludeTransformer] = useState(er?.includeTransformer ?? true);
 
   function handleShapeChange(newShape: RoomShape) {
     setShape(newShape);
@@ -187,7 +190,7 @@ export function RoomForm({ onAdd, onCancel, priceMap }: RoomFormProps) {
     }
 
     const room: RoomInput = {
-      id: crypto.randomUUID(),
+      id: editRoom?.id ?? crypto.randomUUID(),
       name: name || "Комната",
       length: lengthM,
       width: widthM,
@@ -212,15 +215,17 @@ export function RoomForm({ onAdd, onCancel, priceMap }: RoomFormProps) {
 
     onAdd(room);
 
-    // Reset
-    setName("");
-    setLength(""); setWidth(""); setSide("");
-    setLA(""); setLB(""); setLC(""); setLD("");
-    setTA(""); setTB(""); setTC(""); setTD("");
-    setSpotsCount("0"); setChandelierCount("0");
-    setCornersCount(String(getDefaultCorners(shape)));
-    setCurtainRodLength("0"); setPipeBypasses("0");
-    setShapeError(null); setActiveSide(null);
+    // Only reset form when adding (not editing)
+    if (!editRoom) {
+      setName("");
+      setLength(""); setWidth(""); setSide("");
+      setLA(""); setLB(""); setLC(""); setLD("");
+      setTA(""); setTB(""); setTC(""); setTD("");
+      setSpotsCount("0"); setChandelierCount("0");
+      setCornersCount(String(getDefaultCorners(shape)));
+      setCurtainRodLength("0"); setPipeBypasses("0");
+      setShapeError(null); setActiveSide(null);
+    }
   }
 
   const preview = computePreview();
@@ -619,7 +624,7 @@ export function RoomForm({ onAdd, onCancel, priceMap }: RoomFormProps) {
       {/* Actions */}
       <div className="flex gap-3 pt-2">
         <Button type="submit" className="flex-1 bg-[#1e3a5f] hover:bg-[#152d4a]">
-          Добавить комнату
+          {editRoom ? "Сохранить" : "Добавить комнату"}
         </Button>
         {onCancel && (
           <Button type="button" variant="outline" onClick={onCancel}>

@@ -90,6 +90,7 @@ export default async function EstimateDetailPage({
           </Link>
         </Button>
         <EstimateActions
+          estimateId={estimate.id}
           publicId={estimate.publicId}
           clientPhone={estimate.clientPhone}
         />
@@ -126,36 +127,58 @@ export default async function EstimateDetailPage({
         </CardContent>
       </Card>
 
-      {/* Rooms */}
-      {calc?.rooms && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">
-              Помещения ({calc.rooms.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {calc.rooms.map((room, i) => (
-                <div
-                  key={i}
-                  className="flex flex-col sm:flex-row sm:justify-between text-sm border-b last:border-0 pb-2 last:pb-0 gap-0.5"
-                >
+      {/* Room details with line items */}
+      {(() => {
+        // Support both new (roomResults) and old (variants) format
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const roomResults = calc?.roomResults ?? (calc as any)?.variants?.find((v: any) => v.type === "standard")?.rooms ?? [];
+        if (!roomResults.length && !calc?.rooms?.length) return null;
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">
+                Детализация ({calc.rooms?.length ?? roomResults.length} помещений)
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {roomResults.length > 0 ? roomResults.map((rr: { roomId?: string; roomName: string; area: number; items: { itemName: string; quantity: number; unit: string; unitPrice: number; total: number }[]; heightMultiplied?: boolean; subtotalAfterHeight: number }, i: number) => (
+                <div key={rr.roomId ?? i} className="space-y-1">
+                  <div className="flex justify-between items-baseline">
+                    <p className="text-sm font-semibold">
+                      {rr.roomName}
+                      <span className="text-muted-foreground font-normal ml-1">({rr.area.toFixed(1)} м²)</span>
+                    </p>
+                    <p className="text-sm font-bold">{formatPrice(rr.subtotalAfterHeight)}</p>
+                  </div>
+                  {rr.items.map((item, j) => (
+                    <div key={j} className="flex justify-between text-xs text-muted-foreground">
+                      <span>
+                        {item.itemName}
+                        <span className="ml-1 text-muted-foreground/60">
+                          {item.quantity} {item.unit} × {formatPrice(item.unitPrice)}
+                        </span>
+                      </span>
+                      <span className="font-medium text-foreground">{formatPrice(item.total)}</span>
+                    </div>
+                  ))}
+                  {rr.heightMultiplied && (
+                    <p className="text-xs text-amber-600">× 1.3 (высота &gt; 3м)</p>
+                  )}
+                </div>
+              )) : calc.rooms?.map((room, i) => (
+                <div key={i} className="flex justify-between text-sm border-b last:border-0 pb-2 last:pb-0">
                   <span>
                     {room.name} — {(room.shape === "l-shape" || room.shape === "t-shape")
                       ? (room.shape === "l-shape" ? "Г-образная" : "Т-образная")
                       : `${Math.round(room.length * 100)}×${Math.round(room.width * 100)} см`}
                   </span>
-                  <span className="text-muted-foreground">
-                    {computeArea(room).toFixed(1)} м²
-                    {room.spotsCount > 0 && ` | ${room.spotsCount} спотов`}
-                  </span>
+                  <span className="text-muted-foreground">{computeArea(room).toFixed(1)} м²</span>
                 </div>
               ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+            </CardContent>
+          </Card>
+        );
+      })()}
 
       <Separator />
 

@@ -37,6 +37,7 @@ function CalculatorContent() {
     isCalculating,
     error,
     addRoom,
+    updateRoom,
     removeRoom,
     duplicateRoom,
     calculate,
@@ -45,6 +46,7 @@ function CalculatorContent() {
   } = useCalculator();
 
   const [showForm, setShowForm] = useState(rooms.length === 0);
+  const [editingRoomId, setEditingRoomId] = useState<string | null>(null);
   const [saveOpen, setSaveOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [priceMap, setPriceMap] = useState<Record<string, number>>({});
@@ -160,19 +162,42 @@ function CalculatorContent() {
       {rooms.length > 0 && (
         <div className="space-y-3">
           {rooms.map((room, i) => (
-            <RoomCard
-              key={room.id}
-              room={room}
-              index={i}
-              onDuplicate={duplicateRoom}
-              onRemove={removeRoom}
-            />
+            editingRoomId === room.id ? (
+              <Card key={room.id}>
+                <CardHeader>
+                  <CardTitle className="text-lg">Редактирование: {room.name}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <RoomForm
+                    editRoom={room}
+                    onAdd={(updated) => {
+                      updateRoom(room.id, updated);
+                      setEditingRoomId(null);
+                    }}
+                    onCancel={() => setEditingRoomId(null)}
+                    priceMap={priceMap}
+                  />
+                </CardContent>
+              </Card>
+            ) : (
+              <RoomCard
+                key={room.id}
+                room={room}
+                index={i}
+                onDuplicate={duplicateRoom}
+                onRemove={removeRoom}
+                onEdit={(id) => {
+                  setEditingRoomId(id);
+                  setShowForm(false);
+                }}
+              />
+            )
           ))}
         </div>
       )}
 
       {/* Room form */}
-      {showForm ? (
+      {showForm && !editingRoomId ? (
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">
@@ -190,7 +215,7 @@ function CalculatorContent() {
             />
           </CardContent>
         </Card>
-      ) : (
+      ) : !editingRoomId && rooms.length > 0 ? (
         <Button
           variant="outline"
           className="w-full border-dashed h-12"
@@ -199,7 +224,7 @@ function CalculatorContent() {
           <Plus className="h-4 w-4 mr-2" />
           Добавить комнату
         </Button>
-      )}
+      ) : null}
 
       {/* Error */}
       {error && (

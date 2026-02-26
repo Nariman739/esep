@@ -3,7 +3,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Copy, Trash2 } from "lucide-react";
+import { Copy, Trash2, Pencil } from "lucide-react";
 import { computeArea, computePerimeter } from "@/lib/room-geometry";
 import type { RoomInput } from "@/lib/types";
 import { CANVAS_TYPES } from "@/lib/constants";
@@ -19,9 +19,10 @@ interface RoomCardProps {
   index: number;
   onDuplicate: (id: string) => void;
   onRemove: (id: string) => void;
+  onEdit?: (id: string) => void;
 }
 
-export function RoomCard({ room, index, onDuplicate, onRemove }: RoomCardProps) {
+export function RoomCard({ room, index, onDuplicate, onRemove, onEdit }: RoomCardProps) {
   const area = computeArea(room).toFixed(1);
   const perimeter = computePerimeter(room).toFixed(1);
   const canvasLabel = CANVAS_TYPES.find((ct) => ct.value === room.canvasType)?.label ?? room.canvasType;
@@ -74,6 +75,16 @@ export function RoomCard({ room, index, onDuplicate, onRemove }: RoomCardProps) 
           </div>
 
           <div className="flex gap-1 ml-2 shrink-0">
+            {onEdit && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9"
+                onClick={() => onEdit(room.id)}
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="icon"
