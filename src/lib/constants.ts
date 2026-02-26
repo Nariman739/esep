@@ -46,8 +46,8 @@ export const PRODUCT_ITEMS: ProductItem[] = [
   { code: "curtain_recessed", name: "Карниз встроенный", unit: "м.п.", defaultPrice: 7000, category: "curtain" },
 
   // Углы
-  { code: "corner_standard", name: "Угол стандарт", unit: "шт.", defaultPrice: 500, category: "corner" },
-  { code: "corner_premium", name: "Угол премиум", unit: "шт.", defaultPrice: 1000, category: "corner" },
+  { code: "corner_plastic", name: "Угол пластик", unit: "шт.", defaultPrice: 1000, category: "corner", description: "Для галтели / вставки" },
+  { code: "corner_aluminum", name: "Угол алюминий", unit: "шт.", defaultPrice: 5000, category: "corner", description: "Для теневого / парящего" },
 
   // Прочее
   { code: "pipe_bypass", name: "Обход трубы", unit: "шт.", defaultPrice: 800, category: "other" },
@@ -100,9 +100,17 @@ export const SPOT_TYPES = [
 ] as const;
 
 export const CORNER_TYPES = [
-  { code: "corner_standard", label: "Стандарт" },
-  { code: "corner_premium", label: "Премиум" },
+  { code: "corner_plastic", label: "Пластик" },
+  { code: "corner_aluminum", label: "Алюминий" },
 ] as const;
+
+/** Map profile type → corner code (auto-selection) */
+export const PROFILE_CORNER_MAP: Record<string, string> = {
+  profile_galtel: "corner_plastic",
+  profile_insert: "corner_plastic",
+  profile_shadow: "corner_aluminum",
+  profile_floating: "corner_aluminum",
+};
 
 export const CURTAIN_TYPES = [
   { code: "curtain_ldsp", label: "ЛДСП" },

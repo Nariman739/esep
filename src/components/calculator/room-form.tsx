@@ -16,8 +16,8 @@ import {
   ROOM_PRESETS,
   PROFILE_TYPES,
   SPOT_TYPES,
-  CORNER_TYPES,
   CURTAIN_TYPES,
+  PROFILE_CORNER_MAP,
   DEFAULT_PRICES,
 } from "@/lib/constants";
 import { getDefaultCorners, validateLShape, validateTShape } from "@/lib/room-geometry";
@@ -95,7 +95,7 @@ export function RoomForm({ onAdd, onCancel, priceMap }: RoomFormProps) {
   // Component selection
   const [profileType, setProfileType] = useState("profile_insert");
   const [spotType, setSpotType] = useState("spot_ours");
-  const [cornerType, setCornerType] = useState("corner_standard");
+  // Corner type auto-determined by profile
   const [curtainType, setCurtainType] = useState("curtain_ldsp");
   const [includeTransformer, setIncludeTransformer] = useState(true);
 
@@ -206,7 +206,6 @@ export function RoomForm({ onAdd, onCancel, priceMap }: RoomFormProps) {
       tShapeDims,
       profileType,
       spotType: (parseInt(spotsCount) || 0) > 0 ? spotType : undefined,
-      cornerType,
       curtainType: curtainM > 0 ? curtainType : undefined,
       includeTransformer: (parseInt(chandelierCount) || 0) > 0 ? includeTransformer : undefined,
     };
@@ -546,29 +545,22 @@ export function RoomForm({ onAdd, onCancel, priceMap }: RoomFormProps) {
           </div>
         )}
 
-        {/* Corner type */}
-        <div className="space-y-1.5">
-          <Label className="text-xs">Углы</Label>
-          <div className="flex gap-1.5">
-            {CORNER_TYPES.map((c) => (
-              <button
-                key={c.code}
-                type="button"
-                onClick={() => setCornerType(c.code)}
-                className={`flex-1 px-2 py-1.5 text-xs rounded-lg border transition-colors ${
-                  cornerType === c.code
-                    ? "bg-[#1e3a5f] text-white border-[#1e3a5f]"
-                    : "hover:bg-muted border-border"
-                }`}
-              >
-                {c.label}
-                <span className={`ml-1 ${cornerType === c.code ? "text-white/70" : "text-muted-foreground"}`}>
-                  {formatPriceCompact(prices[c.code] ?? 0)}₸
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
+        {/* Corner type — auto by profile */}
+        {(() => {
+          const autoCorner = PROFILE_CORNER_MAP[profileType] || "corner_plastic";
+          const isAluminum = autoCorner === "corner_aluminum";
+          return (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground px-1">
+              <span>Углы: {isAluminum ? "алюминий" : "пластик"}</span>
+              <span className="font-medium text-foreground">
+                {formatPriceCompact(prices[autoCorner] ?? 0)}₸/шт
+              </span>
+              <span className="text-[10px]">
+                (по типу профиля)
+              </span>
+            </div>
+          );
+        })()}
 
         {/* Curtain type — only if curtain > 0 */}
         {parseFloat(curtainRodLength) > 0 && (

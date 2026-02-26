@@ -149,6 +149,7 @@ export default function PricesPage() {
                       step="100"
                       value={item.price}
                       onChange={(e) => updatePrice(item.code, parseFloat(e.target.value) || 0)}
+                      onFocus={(e) => e.target.select()}
                       className={`w-24 sm:w-28 text-right ${item.isCustom ? "border-[#1e3a5f]" : ""}`}
                       inputMode="numeric"
                     />

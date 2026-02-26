@@ -4,7 +4,7 @@ import type {
   RoomResult,
   CalculationResult,
 } from "./types";
-import { PRODUCT_BY_CODE, DEFAULT_PRICES } from "./constants";
+import { PRODUCT_BY_CODE, DEFAULT_PRICES, PROFILE_CORNER_MAP } from "./constants";
 import { computeArea, computePerimeter, getBoundingBoxMinDim } from "./room-geometry";
 
 type PriceMap = Record<string, number>;
@@ -101,9 +101,9 @@ function calculateRoom(
     if (lightItem) items.push(lightItem);
   }
 
-  // Corners — master's choice or default
+  // Corners — auto-determined by profile type
   const cornersCount = room.cornersCount > 0 ? room.cornersCount : 4;
-  const cornerCode = room.cornerType || "corner_standard";
+  const cornerCode = PROFILE_CORNER_MAP[profileCode] || "corner_plastic";
   const cornerItem = makeLineItem(cornerCode, cornersCount, prices);
   if (cornerItem) items.push(cornerItem);
 
