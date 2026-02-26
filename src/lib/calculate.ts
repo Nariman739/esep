@@ -66,8 +66,21 @@ function calculateRoom(
 
   // Profile — master's choice or default
   const profileCode = room.profileType || "profile_insert";
-  const profileItem = makeLineItem(profileCode, perimeter, prices);
-  if (profileItem) items.push(profileItem);
+  if (profileCode === "profile_galtel") {
+    // Plastic profile only (galtel installed by others)
+    const plasticItem = makeLineItem("profile_plastic", perimeter, prices);
+    if (plasticItem) items.push(plasticItem);
+  } else if (profileCode === "profile_insert") {
+    // Plastic profile + insert strip (2 line items)
+    const plasticItem = makeLineItem("profile_plastic", perimeter, prices);
+    if (plasticItem) items.push(plasticItem);
+    const insertItem = makeLineItem("insert", perimeter, prices);
+    if (insertItem) items.push(insertItem);
+  } else {
+    // Shadow or floating — single aluminum profile
+    const profileItem = makeLineItem(profileCode, perimeter, prices);
+    if (profileItem) items.push(profileItem);
+  }
 
   // Spots — master's choice or default
   if (room.spotsCount > 0) {

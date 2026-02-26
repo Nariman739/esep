@@ -24,10 +24,10 @@ export const PRODUCT_ITEMS: ProductItem[] = [
   { code: "canvas_over", name: "Полотно глянцевое/цветное", unit: "м²", defaultPrice: 2800, category: "canvas", description: "Любая ширина" },
 
   // Профили (за м.п.)
-  { code: "profile_galtel", name: "Профиль галтель", unit: "м.п.", defaultPrice: 600, category: "profile", description: "Плинтус/галтель" },
-  { code: "profile_insert", name: "Профиль со вставкой", unit: "м.п.", defaultPrice: 800, category: "profile", description: "Стандартная вставка" },
-  { code: "profile_shadow", name: "Теневой профиль", unit: "м.п.", defaultPrice: 1400, category: "profile", description: "Теневой зазор" },
-  { code: "profile_floating", name: "Парящий профиль", unit: "м.п.", defaultPrice: 1600, category: "profile", description: "Парящий с подсветкой" },
+  { code: "profile_plastic", name: "Пластиковый профиль", unit: "м.п.", defaultPrice: 500, category: "profile", description: "Багет (под галтель или вставку)" },
+  { code: "insert", name: "Вставка", unit: "м.п.", defaultPrice: 100, category: "profile", description: "Маскировочная лента" },
+  { code: "profile_shadow", name: "Теневой профиль", unit: "м.п.", defaultPrice: 1400, category: "profile", description: "Алюминиевый теневой зазор" },
+  { code: "profile_floating", name: "Парящий профиль", unit: "м.п.", defaultPrice: 1600, category: "profile", description: "Алюминиевый с подсветкой" },
 
   // Светильники (за шт.)
   { code: "spot_client", name: "Споты (клиентские)", unit: "шт.", defaultPrice: 500, category: "spot", description: "Установка клиентских" },
@@ -87,10 +87,10 @@ export const CANVAS_TYPES = [
 export type CanvasType = (typeof CANVAS_TYPES)[number]["value"];
 
 export const PROFILE_TYPES = [
-  { code: "profile_galtel", label: "Галтель" },
-  { code: "profile_insert", label: "Со вставкой" },
-  { code: "profile_shadow", label: "Теневой" },
-  { code: "profile_floating", label: "Парящий" },
+  { code: "profile_galtel", label: "Под галтель", description: "Только профиль" },
+  { code: "profile_insert", label: "Со вставкой", description: "Профиль + вставка" },
+  { code: "profile_shadow", label: "Теневой", description: "Алюминиевый" },
+  { code: "profile_floating", label: "Парящий", description: "Алюминиевый" },
 ] as const;
 
 export const SPOT_TYPES = [

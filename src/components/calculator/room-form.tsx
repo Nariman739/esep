@@ -499,23 +499,34 @@ export function RoomForm({ onAdd, onCancel, priceMap }: RoomFormProps) {
         <div className="space-y-1.5">
           <Label className="text-xs">Профиль</Label>
           <div className="grid grid-cols-2 gap-1.5">
-            {PROFILE_TYPES.map((p) => (
-              <button
-                key={p.code}
-                type="button"
-                onClick={() => setProfileType(p.code)}
-                className={`px-2 py-1.5 text-xs rounded-lg border transition-colors text-left ${
-                  profileType === p.code
-                    ? "bg-[#1e3a5f] text-white border-[#1e3a5f]"
-                    : "hover:bg-muted border-border"
-                }`}
-              >
-                {p.label}
-                <span className={`ml-1 ${profileType === p.code ? "text-white/70" : "text-muted-foreground"}`}>
-                  {formatPriceCompact(prices[p.code] ?? 0)}₸
-                </span>
-              </button>
-            ))}
+            {PROFILE_TYPES.map((p) => {
+              // For galtel: just plastic profile; insert: plastic + insert; others: own price
+              let displayPrice: number;
+              if (p.code === "profile_galtel") {
+                displayPrice = prices["profile_plastic"] ?? 0;
+              } else if (p.code === "profile_insert") {
+                displayPrice = (prices["profile_plastic"] ?? 0) + (prices["insert"] ?? 0);
+              } else {
+                displayPrice = prices[p.code] ?? 0;
+              }
+              return (
+                <button
+                  key={p.code}
+                  type="button"
+                  onClick={() => setProfileType(p.code)}
+                  className={`px-2 py-1.5 text-xs rounded-lg border transition-colors text-left ${
+                    profileType === p.code
+                      ? "bg-[#1e3a5f] text-white border-[#1e3a5f]"
+                      : "hover:bg-muted border-border"
+                  }`}
+                >
+                  {p.label}
+                  <span className={`ml-1 ${profileType === p.code ? "text-white/70" : "text-muted-foreground"}`}>
+                    {formatPriceCompact(displayPrice)}₸
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
