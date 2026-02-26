@@ -17,6 +17,20 @@ import { RoomShapeSvg } from "./room-shape-svg";
 import type { RoomInput, RoomShape } from "@/lib/types";
 import type { CanvasType } from "@/lib/constants";
 
+// Clear "0" on focus so user can type directly, restore "0" on blur if empty
+function zeroFieldProps(value: string, setter: (v: string) => void) {
+  return {
+    value,
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) => setter(e.target.value),
+    onFocus: (e: React.FocusEvent<HTMLInputElement>) => {
+      if (e.target.value === "0") setter("");
+    },
+    onBlur: (e: React.FocusEvent<HTMLInputElement>) => {
+      if (e.target.value === "") setter("0");
+    },
+  };
+}
+
 interface RoomFormProps {
   onAdd: (room: RoomInput) => void;
   onCancel?: () => void;
@@ -401,8 +415,7 @@ export function RoomForm({ onAdd, onCancel }: RoomFormProps) {
             id="spots"
             type="number"
             min="0"
-            value={spotsCount}
-            onChange={(e) => setSpotsCount(e.target.value)}
+            {...zeroFieldProps(spotsCount, setSpotsCount)}
             inputMode="numeric"
           />
         </div>
@@ -412,8 +425,7 @@ export function RoomForm({ onAdd, onCancel }: RoomFormProps) {
             id="chandeliers"
             type="number"
             min="0"
-            value={chandelierCount}
-            onChange={(e) => setChandelierCount(e.target.value)}
+            {...zeroFieldProps(chandelierCount, setChandelierCount)}
             inputMode="numeric"
           />
         </div>
@@ -423,8 +435,7 @@ export function RoomForm({ onAdd, onCancel }: RoomFormProps) {
             id="corners"
             type="number"
             min="0"
-            value={cornersCount}
-            onChange={(e) => setCornersCount(e.target.value)}
+            {...zeroFieldProps(cornersCount, setCornersCount)}
             inputMode="numeric"
           />
         </div>
@@ -438,8 +449,7 @@ export function RoomForm({ onAdd, onCancel }: RoomFormProps) {
             type="number"
             step="1"
             min="0"
-            value={curtainRodLength}
-            onChange={(e) => setCurtainRodLength(e.target.value)}
+            {...zeroFieldProps(curtainRodLength, setCurtainRodLength)}
             inputMode="numeric"
           />
         </div>
@@ -449,8 +459,7 @@ export function RoomForm({ onAdd, onCancel }: RoomFormProps) {
             id="pipes"
             type="number"
             min="0"
-            value={pipeBypasses}
-            onChange={(e) => setPipeBypasses(e.target.value)}
+            {...zeroFieldProps(pipeBypasses, setPipeBypasses)}
             inputMode="numeric"
           />
         </div>
