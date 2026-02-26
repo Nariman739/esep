@@ -86,6 +86,30 @@ export const CANVAS_TYPES = [
 
 export type CanvasType = (typeof CANVAS_TYPES)[number]["value"];
 
+export const PROFILE_TYPES = [
+  { code: "profile_galtel", label: "Галтель" },
+  { code: "profile_insert", label: "Со вставкой" },
+  { code: "profile_shadow", label: "Теневой" },
+  { code: "profile_floating", label: "Парящий" },
+] as const;
+
+export const SPOT_TYPES = [
+  { code: "spot_client", label: "Клиентские" },
+  { code: "spot_ours", label: "GX53 (наши)" },
+  { code: "spot_double", label: "Двойные LED" },
+] as const;
+
+export const CORNER_TYPES = [
+  { code: "corner_standard", label: "Стандарт" },
+  { code: "corner_premium", label: "Премиум" },
+] as const;
+
+export const CURTAIN_TYPES = [
+  { code: "curtain_ldsp", label: "ЛДСП" },
+  { code: "curtain_aluminum", label: "Алюминиевый" },
+  { code: "curtain_recessed", label: "Встроенный" },
+] as const;
+
 export const ROOM_PRESETS = [
   "Зал",
   "Спальня",

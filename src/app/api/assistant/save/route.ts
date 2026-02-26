@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { sessionId, clientName, clientPhone, clientAddress, recommendedVariant } = body;
+    const { sessionId, clientName, clientPhone, clientAddress } = body;
 
     if (!sessionId) {
       return NextResponse.json(
@@ -60,13 +60,10 @@ export async function POST(request: Request) {
         roomsData: chatSession.extractedRooms!,
         calculationData: chatSession.calculationData!,
         totalArea,
-        economyTotal: calc.variants.find((v) => v.type === "economy")?.total ?? 0,
-        standardTotal: calc.variants.find((v) => v.type === "standard")?.total ?? 0,
-        premiumTotal: calc.variants.find((v) => v.type === "premium")?.total ?? 0,
+        total: calc.total,
         clientName: clientName || null,
         clientPhone: clientPhone || null,
         clientAddress: clientAddress || null,
-        recommendedVariant: recommendedVariant || "standard",
         validUntil,
       },
     });

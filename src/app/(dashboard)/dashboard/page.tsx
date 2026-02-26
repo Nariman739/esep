@@ -52,7 +52,7 @@ export default async function DashboardPage() {
     prisma.estimate.aggregate({
       where: { masterId: master.id },
       _sum: { totalArea: true },
-      _avg: { standardTotal: true },
+      _avg: { total: true },
     }),
     prisma.estimate.findMany({
       where: { masterId: master.id },
@@ -63,6 +63,7 @@ export default async function DashboardPage() {
         publicId: true,
         clientName: true,
         totalArea: true,
+        total: true,
         standardTotal: true,
         createdAt: true,
         status: true,
@@ -77,7 +78,7 @@ export default async function DashboardPage() {
   const kpProgress = isPro ? 100 : Math.min(100, (kpUsed / (kpLimit as number)) * 100);
 
   const totalArea = aggregates._sum.totalArea ?? 0;
-  const avgCheck = aggregates._avg.standardTotal ?? 0;
+  const avgCheck = aggregates._avg.total ?? 0;
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
@@ -265,7 +266,7 @@ export default async function DashboardPage() {
                   <div className="flex items-center gap-3 ml-4 shrink-0">
                     <div className="text-right">
                       <p className="text-sm font-semibold text-[#1e3a5f]">
-                        {formatPrice(est.standardTotal)}
+                        {formatPrice(est.total || est.standardTotal || 0)}
                       </p>
                       <Badge variant="secondary" className="text-[10px] mt-0.5">
                         {STATUS_LABELS[est.status] ?? est.status}

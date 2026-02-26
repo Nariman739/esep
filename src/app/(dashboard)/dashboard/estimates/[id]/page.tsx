@@ -20,11 +20,6 @@ const STATUS_LABELS: Record<string, { label: string; variant: "default" | "secon
   REJECTED: { label: "Отклонено", variant: "destructive" },
 };
 
-const VARIANT_LABELS: Record<string, string> = {
-  economy: "Эконом",
-  standard: "Стандарт",
-  premium: "Премиум",
-};
 
 export default async function EstimateDetailPage({
   params,
@@ -65,13 +60,13 @@ export default async function EstimateDetailPage({
         <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
       </div>
 
-      {/* Confirmed variant banner */}
-      {estimate.confirmedVariant && (
+      {/* Confirmed banner */}
+      {estimate.status === "CONFIRMED" && (
         <div className="rounded-xl bg-green-50 border border-green-200 px-4 py-3 flex items-center gap-3">
-          <span className="text-green-600 text-lg">✅</span>
+          <span className="text-green-600 text-lg">&#x2705;</span>
           <div>
             <p className="text-sm font-semibold text-green-800">
-              Клиент принял КП — вариант &laquo;{VARIANT_LABELS[estimate.confirmedVariant] ?? estimate.confirmedVariant}&raquo;
+              Клиент принял КП
             </p>
             <p className="text-xs text-green-700">
               Свяжитесь с клиентом для согласования замера
@@ -114,44 +109,16 @@ export default async function EstimateDetailPage({
         </Card>
       )}
 
-      {/* 3 Variants summary */}
-      <div className="grid gap-4 md:grid-cols-3">
-        {[
-          { key: "economy", label: "Эконом", total: estimate.economyTotal, color: "text-green-600", bg: "bg-green-50" },
-          { key: "standard", label: "Стандарт", total: estimate.standardTotal, color: "text-[#1e3a5f]", bg: "bg-blue-50" },
-          { key: "premium", label: "Премиум", total: estimate.premiumTotal, color: "text-amber-600", bg: "bg-amber-50" },
-        ].map((v) => {
-          const isRecommended = estimate.recommendedVariant === v.key;
-          const isConfirmed = estimate.confirmedVariant === v.key;
-          return (
-            <Card
-              key={v.key}
-              className={[
-                isRecommended ? "ring-2 ring-[#1e3a5f]/30" : "",
-                isConfirmed ? "ring-2 ring-green-500/50" : "",
-              ].join(" ")}
-            >
-              <CardContent className={`pt-4 pb-4 ${v.bg}`}>
-                <div className="flex items-center justify-between mb-1">
-                  <span className={`font-semibold ${v.color}`}>{v.label}</span>
-                  <div className="flex gap-1">
-                    {isRecommended && (
-                      <Badge className="bg-[#1e3a5f] text-xs">Рекомендован</Badge>
-                    )}
-                    {isConfirmed && (
-                      <Badge className="bg-green-600 text-xs">Выбран</Badge>
-                    )}
-                  </div>
-                </div>
-                <p className="text-2xl font-bold">{formatPrice(v.total)}</p>
-                <p className="text-xs text-muted-foreground">
-                  {formatPrice(Math.round(v.total / estimate.totalArea))}/м²
-                </p>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+      {/* Total summary */}
+      <Card className="border-[#1e3a5f] ring-2 ring-[#1e3a5f]/20">
+        <CardContent className="pt-4 pb-4 bg-blue-50">
+          <span className="font-semibold text-[#1e3a5f]">Итого</span>
+          <p className="text-2xl font-bold">{formatPrice(estimate.total || estimate.standardTotal || 0)}</p>
+          <p className="text-xs text-muted-foreground">
+            {formatPrice(Math.round((estimate.total || estimate.standardTotal || 0) / estimate.totalArea))}/м²
+          </p>
+        </CardContent>
+      </Card>
 
       {/* Rooms */}
       {calc?.rooms && (

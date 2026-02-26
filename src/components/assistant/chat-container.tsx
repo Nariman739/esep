@@ -26,7 +26,7 @@ export function ChatContainer() {
 
   const [showSaveDialog, setShowSaveDialog] = useState(false);
 
-  const handleSaveKp = async (data: ClientInfo & { recommendedVariant: string }) => {
+  const handleSaveKp = async (data: ClientInfo) => {
     if (!sessionId) return;
 
     const res = await fetch("/api/assistant/save", {
@@ -37,7 +37,6 @@ export function ChatContainer() {
         clientName: data.name,
         clientPhone: data.phone,
         clientAddress: data.address,
-        recommendedVariant: data.recommendedVariant,
       }),
     });
 

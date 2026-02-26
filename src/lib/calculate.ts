@@ -1,9 +1,7 @@
 import type {
   RoomInput,
   LineItem,
-  RoomVariant,
-  Variant,
-  VariantType,
+  RoomResult,
   CalculationResult,
 } from "./types";
 import { PRODUCT_BY_CODE, DEFAULT_PRICES } from "./constants";
@@ -41,23 +39,9 @@ function makeLineItem(
 }
 
 /**
- * Determine canvas code based on variant and room
+ * Determine canvas code based on canvas type and room dimensions
  */
-function getCanvasCode(
-  room: RoomInput,
-  variantType: VariantType
-): string {
-  if (variantType === "premium") return "canvas_over";
-
-  if (variantType === "standard") {
-    // Standard uses canvas_550 minimum, upgrades to canvas_over for glyanets/color
-    if (room.canvasType === "glyanets" || room.canvasType === "color") {
-      return "canvas_over";
-    }
-    return "canvas_550";
-  }
-
-  // Economy: cheapest canvas that fits the room width
+function getCanvasCode(room: RoomInput): string {
   if (room.canvasType === "glyanets" || room.canvasType === "color") {
     return "canvas_over";
   }
@@ -67,74 +51,39 @@ function getCanvasCode(
   return "canvas_over";
 }
 
-interface VariantConfig {
-  type: VariantType;
-  label: string;
-  profileCode: string;
-  spotCode: string;
-  includeTransformer: boolean;
-  cornerCode: string;
-  curtainCode: string;
-}
-
-const VARIANT_CONFIGS: VariantConfig[] = [
-  {
-    type: "economy",
-    label: "Эконом",
-    profileCode: "profile_galtel",
-    spotCode: "spot_client",
-    includeTransformer: false,
-    cornerCode: "corner_standard",
-    curtainCode: "curtain_ldsp",
-  },
-  {
-    type: "standard",
-    label: "Стандарт",
-    profileCode: "profile_insert",
-    spotCode: "spot_ours",
-    includeTransformer: true,
-    cornerCode: "corner_standard",
-    curtainCode: "curtain_ldsp",
-  },
-  {
-    type: "premium",
-    label: "Премиум",
-    profileCode: "profile_shadow",
-    spotCode: "spot_double",
-    includeTransformer: true,
-    cornerCode: "corner_premium",
-    curtainCode: "curtain_aluminum",
-  },
-];
-
-function calculateRoomVariant(
+function calculateRoom(
   room: RoomInput,
-  config: VariantConfig,
   prices: PriceMap
-): RoomVariant {
+): RoomResult {
   const area = computeArea(room);
   const perimeter = computePerimeter(room);
   const items: LineItem[] = [];
 
   // Canvas
-  const canvasCode = getCanvasCode(room, config.type);
+  const canvasCode = getCanvasCode(room);
   const canvasItem = makeLineItem(canvasCode, area, prices);
   if (canvasItem) items.push(canvasItem);
 
-  // Profile
-  const profileItem = makeLineItem(config.profileCode, perimeter, prices);
+  // Profile — master's choice or default
+  const profileCode = room.profileType || "profile_insert";
+  const profileItem = makeLineItem(profileCode, perimeter, prices);
   if (profileItem) items.push(profileItem);
 
-  // Spots
-  const spotItem = makeLineItem(config.spotCode, room.spotsCount, prices);
-  if (spotItem) items.push(spotItem);
+  // Spots — master's choice or default
+  if (room.spotsCount > 0) {
+    const spotCode = room.spotType || "spot_ours";
+    const spotItem = makeLineItem(spotCode, room.spotsCount, prices);
+    if (spotItem) items.push(spotItem);
+  }
 
   // Chandeliers
   if (room.chandelierCount > 0) {
     const chandelierItem = makeLineItem("chandelier", room.chandelierCount, prices);
     if (chandelierItem) items.push(chandelierItem);
 
-    if (config.includeTransformer) {
+    // Transformer — master's choice (default: include)
+    const includeTransformer = room.includeTransformer ?? true;
+    if (includeTransformer) {
       const transformerItem = makeLineItem("transformer", room.chandelierCount, prices);
       if (transformerItem) items.push(transformerItem);
     }
@@ -152,14 +101,16 @@ function calculateRoomVariant(
     if (lightItem) items.push(lightItem);
   }
 
-  // Corners
+  // Corners — master's choice or default
   const cornersCount = room.cornersCount > 0 ? room.cornersCount : 4;
-  const cornerItem = makeLineItem(config.cornerCode, cornersCount, prices);
+  const cornerCode = room.cornerType || "corner_standard";
+  const cornerItem = makeLineItem(cornerCode, cornersCount, prices);
   if (cornerItem) items.push(cornerItem);
 
-  // Curtain rod
+  // Curtain rod — master's choice or default
   if (room.curtainRodLength > 0) {
-    const curtainItem = makeLineItem(config.curtainCode, room.curtainRodLength, prices);
+    const curtainCode = room.curtainType || "curtain_ldsp";
+    const curtainItem = makeLineItem(curtainCode, room.curtainRodLength, prices);
     if (curtainItem) items.push(curtainItem);
   }
 
@@ -211,39 +162,28 @@ export function calculate(
     0
   );
 
+  const roomResults = rooms.map((room) => calculateRoom(room, prices));
+
+  const subtotal = roomResults.reduce(
+    (sum, rr) => sum + rr.subtotalAfterHeight,
+    0
+  );
+
   const minOrder = getPrice(prices, "min_order");
-
-  const variants: Variant[] = VARIANT_CONFIGS.map((config) => {
-    const roomVariants = rooms.map((room) =>
-      calculateRoomVariant(room, config, prices)
-    );
-
-    const subtotal = roomVariants.reduce(
-      (sum, rv) => sum + rv.subtotalAfterHeight,
-      0
-    );
-
-    const minOrderApplied = subtotal < minOrder;
-    const total = Math.max(subtotal, minOrder);
-
-    return {
-      type: config.type,
-      label: config.label,
-      rooms: roomVariants,
-      subtotal,
-      minOrderApplied,
-      total,
-      pricePerM2: totalArea > 0 ? Math.round(total / totalArea) : 0,
-    };
-  });
+  const minOrderApplied = subtotal < minOrder;
+  const total = Math.max(subtotal, minOrder);
 
   return {
     rooms,
-    variants,
+    roomResults,
+    subtotal,
+    minOrderApplied,
+    total,
     totalArea,
     totalPerimeter,
     totalSpots,
     totalChandeliers,
+    pricePerM2: totalArea > 0 ? Math.round(total / totalArea) : 0,
     calculatedAt: new Date().toISOString(),
   };
 }

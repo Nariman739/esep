@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,6 +30,18 @@ export default function CalculatorPage() {
   const [showForm, setShowForm] = useState(rooms.length === 0);
   const [saveOpen, setSaveOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [priceMap, setPriceMap] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    fetch("/api/prices")
+      .then((r) => r.json())
+      .then((items: { code: string; price: number }[]) => {
+        const map: Record<string, number> = {};
+        for (const item of items) map[item.code] = item.price;
+        setPriceMap(map);
+      })
+      .catch(() => {});
+  }, []);
 
   async function handleSave(clientName: string, clientPhone: string) {
     if (!result) return;
@@ -43,9 +55,7 @@ export default function CalculatorPage() {
           roomsData: result.rooms,
           calculationData: result,
           totalArea: result.totalArea,
-          economyTotal: result.variants[0].total,
-          standardTotal: result.variants[1].total,
-          premiumTotal: result.variants[2].total,
+          total: result.total,
           clientName: clientName || undefined,
           clientPhone: clientPhone || undefined,
         }),
@@ -92,7 +102,7 @@ export default function CalculatorPage() {
       <div>
         <h1 className="text-2xl font-bold">Калькулятор</h1>
         <p className="text-sm text-muted-foreground">
-          Добавьте комнаты и получите 3 варианта стоимости
+          Добавьте комнаты и получите стоимость
         </p>
       </div>
 
@@ -126,6 +136,7 @@ export default function CalculatorPage() {
                 setShowForm(false);
               }}
               onCancel={rooms.length > 0 ? () => setShowForm(false) : undefined}
+              priceMap={priceMap}
             />
           </CardContent>
         </Card>

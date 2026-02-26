@@ -98,9 +98,10 @@ model Estimate {
 
   // Summary
   totalArea       Float
-  economyTotal    Float
-  standardTotal   Float
-  premiumTotal    Float
+  total           Float    @default(0)
+  economyTotal    Float?
+  standardTotal   Float?
+  premiumTotal    Float?
 
   // Status
   status          EstimateStatus @default(DRAFT)

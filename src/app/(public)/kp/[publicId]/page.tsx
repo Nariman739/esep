@@ -143,23 +143,19 @@ export default async function PublicKpPage({
                   : `до ${formatDate(estimate.validUntil)}`}
               </span>
             )}
-            {estimate.confirmedVariant && (
+            {estimate.status === "CONFIRMED" && (
               <span className="bg-emerald-500/30 text-emerald-200 text-sm px-3 py-1.5 rounded-full border border-emerald-400/40">
-                ✅ Принято
+                Принято
               </span>
             )}
           </div>
 
-          {/* Price summary strip */}
-          <div className="mt-6 flex justify-center gap-6 flex-wrap">
-            {calc.variants.map((v) => (
-              <div key={v.type} className="text-center">
-                <p className="text-white/50 text-xs mb-0.5">{v.label}</p>
-                <p className="text-white font-bold text-xl leading-none">
-                  {formatPrice(v.total)}
-                </p>
-              </div>
-            ))}
+          {/* Price summary */}
+          <div className="mt-6 text-center">
+            <p className="text-white/50 text-xs mb-0.5">Стоимость</p>
+            <p className="text-white font-bold text-2xl leading-none">
+              {formatPrice(estimate.total || estimate.standardTotal || 0)}
+            </p>
           </div>
         </div>
 
@@ -175,16 +171,16 @@ export default async function PublicKpPage({
         </svg>
       </div>
 
-      {/* ── VARIANTS ── */}
+      {/* ── PRICE DETAILS ── */}
       <section className="pt-6 pb-6">
         <h2 className="text-lg font-bold text-gray-900 mb-4 px-4">
-          Варианты стоимости
+          Стоимость работ
         </h2>
         <ConfirmSection
           estimateId={estimate.id}
-          variants={calc.variants}
-          recommendedVariant={estimate.recommendedVariant}
-          initialConfirmedVariant={estimate.confirmedVariant}
+          calc={calc}
+          total={estimate.total || estimate.standardTotal || 0}
+          initialConfirmed={estimate.status === "CONFIRMED"}
           brandColor={brandColor}
         />
       </section>

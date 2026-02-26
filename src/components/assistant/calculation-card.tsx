@@ -12,12 +12,6 @@ interface CalculationCardProps {
   onSaveKp?: () => void;
 }
 
-const variantConfig = {
-  economy: { label: "Эконом", color: "text-green-600", bg: "bg-green-50" },
-  standard: { label: "Стандарт", color: "text-[#1e3a5f]", bg: "bg-blue-50" },
-  premium: { label: "Премиум", color: "text-amber-600", bg: "bg-amber-50" },
-} as const;
-
 export function CalculationCard({ result, onSaveKp }: CalculationCardProps) {
   return (
     <Card className="border-[#1e3a5f]/20">
@@ -29,33 +23,18 @@ export function CalculationCard({ result, onSaveKp }: CalculationCardProps) {
           </Badge>
         </div>
 
-        {/* 3 variants horizontal scroll on mobile */}
-        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 snap-x">
-          {result.variants.map((v) => {
-            const config = variantConfig[v.type];
-            const isHit = v.type === "standard";
-            return (
-              <div
-                key={v.type}
-                className={`flex-shrink-0 w-[140px] rounded-lg p-3 ${config.bg} ${
-                  isHit ? "ring-2 ring-[#1e3a5f]/20" : ""
-                } snap-start`}
-              >
-                <div className="flex items-center gap-1">
-                  <span className={`text-xs font-semibold ${config.color}`}>
-                    {config.label}
-                  </span>
-                  {isHit && (
-                    <Badge className="bg-[#1e3a5f] text-[10px] px-1 py-0">ХИТ</Badge>
-                  )}
-                </div>
-                <p className="text-lg font-bold mt-1">{formatPrice(v.total)}</p>
-                <p className="text-[11px] text-muted-foreground">
-                  {formatPrice(v.pricePerM2)}/м²
-                </p>
-              </div>
-            );
-          })}
+        {/* Single total */}
+        <div className="rounded-lg p-3 bg-blue-50 ring-2 ring-[#1e3a5f]/20">
+          <span className="text-xs font-semibold text-[#1e3a5f]">Итого</span>
+          <p className="text-lg font-bold mt-1">{formatPrice(result.total)}</p>
+          <p className="text-[11px] text-muted-foreground">
+            {formatPrice(result.pricePerM2)}/м²
+          </p>
+          {result.minOrderApplied && (
+            <p className="text-[10px] text-amber-600 mt-0.5">
+              Применён мин. заказ
+            </p>
+          )}
         </div>
 
         {onSaveKp && (

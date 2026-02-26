@@ -80,17 +80,9 @@ export default async function EstimatesPage() {
                       </p>
                     </div>
                     <div className="flex items-center gap-2 sm:flex-col sm:items-end">
-                      <div className="flex gap-2 text-sm">
-                        <span className="text-green-600">
-                          {formatPrice(est.economyTotal)}
-                        </span>
-                        <span className="font-bold text-[#1e3a5f]">
-                          {formatPrice(est.standardTotal)}
-                        </span>
-                        <span className="text-amber-600">
-                          {formatPrice(est.premiumTotal)}
-                        </span>
-                      </div>
+                      <span className="font-bold text-[#1e3a5f] text-sm">
+                        {formatPrice(est.total || est.standardTotal || 0)}
+                      </span>
                       <Badge variant="secondary" className="text-xs">
                         {STATUS_LABELS[est.status] || est.status}
                       </Badge>

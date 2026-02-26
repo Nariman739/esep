@@ -42,6 +42,12 @@ export interface RoomInput {
   shape?: RoomShape;
   lShapeDims?: LShapeDimensions;
   tShapeDims?: TShapeDimensions;
+  // Component selection (master chooses)
+  profileType?: string;
+  spotType?: string;
+  cornerType?: string;
+  curtainType?: string;
+  includeTransformer?: boolean;
 }
 
 // ============================================
@@ -57,7 +63,7 @@ export interface LineItem {
   total: number;
 }
 
-export interface RoomVariant {
+export interface RoomResult {
   roomId: string;
   roomName: string;
   area: number;
@@ -68,25 +74,17 @@ export interface RoomVariant {
   subtotalAfterHeight: number;
 }
 
-export type VariantType = "economy" | "standard" | "premium";
-
-export interface Variant {
-  type: VariantType;
-  label: string;
-  rooms: RoomVariant[];
+export interface CalculationResult {
+  rooms: RoomInput[];
+  roomResults: RoomResult[];
   subtotal: number;
   minOrderApplied: boolean;
   total: number;
-  pricePerM2: number;
-}
-
-export interface CalculationResult {
-  rooms: RoomInput[];
-  variants: Variant[];
   totalArea: number;
   totalPerimeter: number;
   totalSpots: number;
   totalChandeliers: number;
+  pricePerM2: number;
   calculatedAt: string;
 }
 

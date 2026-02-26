@@ -11,7 +11,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CANVAS_TYPES, ROOM_PRESETS } from "@/lib/constants";
+import {
+  CANVAS_TYPES,
+  ROOM_PRESETS,
+  PROFILE_TYPES,
+  SPOT_TYPES,
+  CORNER_TYPES,
+  CURTAIN_TYPES,
+  DEFAULT_PRICES,
+} from "@/lib/constants";
 import { getDefaultCorners, validateLShape, validateTShape } from "@/lib/room-geometry";
 import { RoomShapeSvg } from "./room-shape-svg";
 import type { RoomInput, RoomShape } from "@/lib/types";
@@ -34,6 +42,12 @@ function zeroFieldProps(value: string, setter: (v: string) => void) {
 interface RoomFormProps {
   onAdd: (room: RoomInput) => void;
   onCancel?: () => void;
+  priceMap?: Record<string, number>;
+}
+
+function formatPriceCompact(n: number): string {
+  if (n >= 1000) return `${Math.round(n / 1000)}к`;
+  return String(n);
 }
 
 const SHAPE_OPTIONS: { value: RoomShape; label: string; icon: string }[] = [
@@ -43,7 +57,8 @@ const SHAPE_OPTIONS: { value: RoomShape; label: string; icon: string }[] = [
   { value: "t-shape", label: "Т-образная", icon: "Т" },
 ];
 
-export function RoomForm({ onAdd, onCancel }: RoomFormProps) {
+export function RoomForm({ onAdd, onCancel, priceMap }: RoomFormProps) {
+  const prices = priceMap ?? DEFAULT_PRICES;
   const [name, setName] = useState("");
   const [shape, setShape] = useState<RoomShape>("rectangle");
 
@@ -76,6 +91,13 @@ export function RoomForm({ onAdd, onCancel }: RoomFormProps) {
   const [curtainRodLength, setCurtainRodLength] = useState("0");
   const [pipeBypasses, setPipeBypasses] = useState("0");
   const [shapeError, setShapeError] = useState<string | null>(null);
+
+  // Component selection
+  const [profileType, setProfileType] = useState("profile_insert");
+  const [spotType, setSpotType] = useState("spot_ours");
+  const [cornerType, setCornerType] = useState("corner_standard");
+  const [curtainType, setCurtainType] = useState("curtain_ldsp");
+  const [includeTransformer, setIncludeTransformer] = useState(true);
 
   function handleShapeChange(newShape: RoomShape) {
     setShape(newShape);
@@ -182,6 +204,11 @@ export function RoomForm({ onAdd, onCancel }: RoomFormProps) {
       shape: roomShape,
       lShapeDims,
       tShapeDims,
+      profileType,
+      spotType: (parseInt(spotsCount) || 0) > 0 ? spotType : undefined,
+      cornerType,
+      curtainType: curtainM > 0 ? curtainType : undefined,
+      includeTransformer: (parseInt(chandelierCount) || 0) > 0 ? includeTransformer : undefined,
     };
 
     onAdd(room);
@@ -463,6 +490,127 @@ export function RoomForm({ onAdd, onCancel }: RoomFormProps) {
             inputMode="numeric"
           />
         </div>
+      </div>
+
+      {/* Component selection */}
+      <div className="space-y-3 pt-2 border-t">
+        <p className="text-sm font-medium text-muted-foreground">Комплектующие</p>
+
+        {/* Profile type */}
+        <div className="space-y-1.5">
+          <Label className="text-xs">Профиль</Label>
+          <div className="grid grid-cols-2 gap-1.5">
+            {PROFILE_TYPES.map((p) => (
+              <button
+                key={p.code}
+                type="button"
+                onClick={() => setProfileType(p.code)}
+                className={`px-2 py-1.5 text-xs rounded-lg border transition-colors text-left ${
+                  profileType === p.code
+                    ? "bg-[#1e3a5f] text-white border-[#1e3a5f]"
+                    : "hover:bg-muted border-border"
+                }`}
+              >
+                {p.label}
+                <span className={`ml-1 ${profileType === p.code ? "text-white/70" : "text-muted-foreground"}`}>
+                  {formatPriceCompact(prices[p.code] ?? 0)}₸
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Spot type — only if spots > 0 */}
+        {parseInt(spotsCount) > 0 && (
+          <div className="space-y-1.5">
+            <Label className="text-xs">Тип спотов</Label>
+            <div className="flex gap-1.5">
+              {SPOT_TYPES.map((s) => (
+                <button
+                  key={s.code}
+                  type="button"
+                  onClick={() => setSpotType(s.code)}
+                  className={`flex-1 px-2 py-1.5 text-xs rounded-lg border transition-colors ${
+                    spotType === s.code
+                      ? "bg-[#1e3a5f] text-white border-[#1e3a5f]"
+                      : "hover:bg-muted border-border"
+                  }`}
+                >
+                  {s.label}
+                  <span className={`block ${spotType === s.code ? "text-white/70" : "text-muted-foreground"}`}>
+                    {formatPriceCompact(prices[s.code] ?? 0)}₸/шт
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Corner type */}
+        <div className="space-y-1.5">
+          <Label className="text-xs">Углы</Label>
+          <div className="flex gap-1.5">
+            {CORNER_TYPES.map((c) => (
+              <button
+                key={c.code}
+                type="button"
+                onClick={() => setCornerType(c.code)}
+                className={`flex-1 px-2 py-1.5 text-xs rounded-lg border transition-colors ${
+                  cornerType === c.code
+                    ? "bg-[#1e3a5f] text-white border-[#1e3a5f]"
+                    : "hover:bg-muted border-border"
+                }`}
+              >
+                {c.label}
+                <span className={`ml-1 ${cornerType === c.code ? "text-white/70" : "text-muted-foreground"}`}>
+                  {formatPriceCompact(prices[c.code] ?? 0)}₸
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Curtain type — only if curtain > 0 */}
+        {parseFloat(curtainRodLength) > 0 && (
+          <div className="space-y-1.5">
+            <Label className="text-xs">Тип карниза</Label>
+            <div className="flex gap-1.5">
+              {CURTAIN_TYPES.map((ct) => (
+                <button
+                  key={ct.code}
+                  type="button"
+                  onClick={() => setCurtainType(ct.code)}
+                  className={`flex-1 px-2 py-1.5 text-xs rounded-lg border transition-colors ${
+                    curtainType === ct.code
+                      ? "bg-[#1e3a5f] text-white border-[#1e3a5f]"
+                      : "hover:bg-muted border-border"
+                  }`}
+                >
+                  {ct.label}
+                  <span className={`block ${curtainType === ct.code ? "text-white/70" : "text-muted-foreground"}`}>
+                    {formatPriceCompact(prices[ct.code] ?? 0)}₸/м.п.
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Transformer checkbox — only if chandeliers > 0 */}
+        {parseInt(chandelierCount) > 0 && (
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <input
+              type="checkbox"
+              checked={includeTransformer}
+              onChange={(e) => setIncludeTransformer(e.target.checked)}
+              className="rounded border-border"
+            />
+            <span>Трансформатор</span>
+            <span className="text-muted-foreground text-xs">
+              {formatPriceCompact(prices["transformer"] ?? 0)}₸/шт
+            </span>
+          </label>
+        )}
       </div>
 
       {/* Actions */}
