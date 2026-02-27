@@ -65,6 +65,7 @@ export default async function PublicKpPage({
 
   const isExpired =
     estimate.validUntil ? new Date(estimate.validUntil) < new Date() : false;
+  const isRevised = estimate.status === "REVISED";
 
   const initials = company
     .split(" ")
@@ -148,6 +149,11 @@ export default async function PublicKpPage({
                 Принято
               </span>
             )}
+            {isRevised && (
+              <span className="bg-orange-500/30 text-orange-200 text-sm px-3 py-1.5 rounded-full border border-orange-400/40">
+                Пересмотрено
+              </span>
+            )}
           </div>
 
           {/* Price summary */}
@@ -181,6 +187,18 @@ export default async function PublicKpPage({
         </svg>
       </div>
 
+      {/* ── REVISED BANNER ── */}
+      {isRevised && (
+        <div className="mx-4 mt-4 rounded-2xl bg-orange-50 border border-orange-200 p-4 text-center">
+          <p className="text-orange-700 font-semibold text-base">
+            Предложение пересмотрено
+          </p>
+          <p className="text-orange-600 text-sm mt-1">
+            Мастер отправит вам обновлённый расчёт. Это КП больше не действительно.
+          </p>
+        </div>
+      )}
+
       {/* ── PRICE DETAILS ── */}
       <section className="pt-6 pb-6">
         <h2 className="text-lg font-bold text-gray-900 mb-4 px-4">
@@ -192,6 +210,7 @@ export default async function PublicKpPage({
           total={estimate.total || estimate.standardTotal || 0}
           discountPercent={estimate.discountPercent}
           initialConfirmed={estimate.status === "CONFIRMED"}
+          isRevised={isRevised}
           brandColor={brandColor}
         />
       </section>

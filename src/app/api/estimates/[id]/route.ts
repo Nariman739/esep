@@ -56,6 +56,15 @@ export async function PUT(
 
     const { clientName, clientPhone, clientAddress, status } = body;
 
+    // Validate status transitions that master can do
+    const allowedMasterStatuses = ["DRAFT", "SENT", "REVISED"];
+    if (status !== undefined && !allowedMasterStatuses.includes(status)) {
+      return NextResponse.json(
+        { error: "Недопустимый статус" },
+        { status: 400 }
+      );
+    }
+
     const updated = await prisma.estimate.update({
       where: { id },
       data: {

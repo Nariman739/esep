@@ -19,6 +19,11 @@ const STATUS_LABELS: Record<string, string> = {
   VIEWED: "Просмотрено",
   CONFIRMED: "Подтверждено",
   REJECTED: "Отклонено",
+  REVISED: "Пересмотрено",
+};
+
+const STATUS_BADGE_CLASSES: Record<string, string> = {
+  REVISED: "bg-orange-100 text-orange-700 border-orange-200",
 };
 
 export default async function EstimatesPage() {
@@ -83,7 +88,10 @@ export default async function EstimatesPage() {
                       <span className="font-bold text-[#1e3a5f] text-sm">
                         {formatPrice(est.total || est.standardTotal || 0)}
                       </span>
-                      <Badge variant="secondary" className="text-xs">
+                      <Badge
+                        variant="secondary"
+                        className={`text-xs ${STATUS_BADGE_CLASSES[est.status] || ""}`}
+                      >
                         {STATUS_LABELS[est.status] || est.status}
                       </Badge>
                     </div>

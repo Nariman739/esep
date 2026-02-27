@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Share2, MessageCircle, Check, Trash2, Download, FileText, ClipboardCheck } from "lucide-react";
+import { Share2, MessageCircle, Check, Trash2, Download, FileText, ClipboardCheck, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 
 interface EstimateActionsProps {
@@ -24,6 +24,7 @@ export function EstimateActions({
   const router = useRouter();
   const [copied, setCopied] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [revising, setRevising] = useState(false);
 
   const handleCopy = async () => {
     try {
@@ -110,6 +111,38 @@ export function EstimateActions({
             <ClipboardCheck className="h-4 w-4 mr-2" />
             Акт
           </a>
+        </Button>
+      )}
+      {(status === "CONFIRMED" || status === "SENT" || status === "VIEWED") && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={async () => {
+            if (!confirm("Пометить КП как пересмотренное? Клиент увидит, что оно недействительно.")) return;
+            setRevising(true);
+            try {
+              const res = await fetch(`/api/estimates/${estimateId}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ status: "REVISED" }),
+              });
+              if (res.ok) {
+                toast.success("КП помечено как пересмотренное");
+                router.refresh();
+              } else {
+                toast.error("Ошибка");
+              }
+            } catch {
+              toast.error("Ошибка соединения");
+            } finally {
+              setRevising(false);
+            }
+          }}
+          disabled={revising}
+          className="text-orange-600 hover:text-orange-700"
+        >
+          <RotateCcw className="h-4 w-4 mr-2" />
+          {revising ? "..." : "Пересмотреть"}
         </Button>
       )}
       <Button

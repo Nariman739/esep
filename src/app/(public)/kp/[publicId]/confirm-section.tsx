@@ -10,6 +10,7 @@ interface ConfirmSectionProps {
   total: number;
   discountPercent: number;
   initialConfirmed: boolean;
+  isRevised?: boolean;
   brandColor: string;
 }
 
@@ -19,6 +20,7 @@ export function ConfirmSection({
   total,
   discountPercent,
   initialConfirmed,
+  isRevised,
   brandColor,
 }: ConfirmSectionProps) {
   const [confirmed, setConfirmed] = useState(initialConfirmed);
@@ -133,7 +135,11 @@ export function ConfirmSection({
 
         {/* Action */}
         <div className="p-4 pt-0">
-          {confirmed ? (
+          {isRevised ? (
+            <div className="flex items-center justify-center gap-2 bg-orange-50 text-orange-600 font-semibold py-3 rounded-xl text-sm border border-orange-200">
+              Предложение пересмотрено
+            </div>
+          ) : confirmed ? (
             <div className="flex items-center justify-center gap-2 bg-emerald-50 text-emerald-700 font-semibold py-3 rounded-xl text-sm">
               Принято
             </div>
