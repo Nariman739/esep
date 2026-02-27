@@ -83,11 +83,15 @@ export function RoomForm({ onAdd, onCancel, priceMap, editRoom, customItems: cus
   const [length, setLength] = useState(isRectLike ? String(Math.round(er.length * 100)) : "");
   const [width, setWidth] = useState(isRectLike ? String(Math.round(er.width * 100)) : "");
 
-  // L-shape dims (cm)
-  const [lA, setLA] = useState(er?.lShapeDims ? String(Math.round(er.lShapeDims.a * 100)) : "");
-  const [lB, setLB] = useState(er?.lShapeDims ? String(Math.round(er.lShapeDims.b * 100)) : "");
-  const [lC, setLC] = useState(er?.lShapeDims ? String(Math.round(er.lShapeDims.c * 100)) : "");
-  const [lD, setLD] = useState(er?.lShapeDims ? String(Math.round(er.lShapeDims.d * 100)) : "");
+  // L-shape dims (cm) — 5 sides clockwise: A(top), B(right↓), C(step←), D(inner↓), E(bottom←)
+  // Handle backward compat: old format had a=top, b=right, c=fullHeight, d=bottomWidth
+  const lOld = er?.lShapeDims;
+  const lIsOldFormat = lOld && (lOld.e === undefined || lOld.e === 0);
+  const [lA, setLA] = useState(lOld ? String(Math.round(lOld.a * 100)) : "");
+  const [lB, setLB] = useState(lOld ? String(Math.round(lOld.b * 100)) : "");
+  const [lC, setLC] = useState(lOld ? String(Math.round((lIsOldFormat ? (lOld.a - lOld.d) : lOld.c) * 100)) : "");
+  const [lD, setLD] = useState(lOld ? String(Math.round((lIsOldFormat ? (lOld.c - lOld.b) : lOld.d) * 100)) : "");
+  const [lE, setLE] = useState(lOld ? String(Math.round((lIsOldFormat ? lOld.d : (lOld.e ?? 0)) * 100)) : "");
 
   // T-shape dims (cm)
   const [tA, setTA] = useState(er?.tShapeDims ? String(Math.round(er.tShapeDims.a * 100)) : "");
@@ -96,7 +100,7 @@ export function RoomForm({ onAdd, onCancel, priceMap, editRoom, customItems: cus
   const [tD, setTD] = useState(er?.tShapeDims ? String(Math.round(er.tShapeDims.d * 100)) : "");
 
   // Active side for SVG highlight
-  const [activeSide, setActiveSide] = useState<"a" | "b" | "c" | "d" | null>(null);
+  const [activeSide, setActiveSide] = useState<"a" | "b" | "c" | "d" | "e" | null>(null);
 
   // Common fields
   const [ceilingHeight, setCeilingHeight] = useState(er ? String(Math.round(er.ceilingHeight * 100)) : "300");
@@ -175,12 +179,12 @@ export function RoomForm({ onAdd, onCancel, priceMap, editRoom, customItems: cus
       return { area: (l * w) / 10000, perimeter: (2 * (l + w)) / 100 };
     }
     if (shape === "l-shape") {
-      const a = parseFloat(lA), b = parseFloat(lB), c = parseFloat(lC), d = parseFloat(lD);
-      if (!a || !b || !c || !d) return null;
-      if (a <= d || c <= b) return null;
+      const a = parseFloat(lA), b = parseFloat(lB), c = parseFloat(lC), d = parseFloat(lD), e = parseFloat(lE);
+      if (!a || !b || !c || !d || !e) return null;
+      // Area = A*B + E*D, Perimeter = A + 2B + C + 2D + E
       return {
-        area: (a * b + d * (c - b)) / 10000,
-        perimeter: (2 * (a + c)) / 100,
+        area: (a * b + e * d) / 10000,
+        perimeter: (a + 2 * b + c + 2 * d + e) / 100,
       };
     }
     if (shape === "t-shape") {
@@ -220,12 +224,13 @@ export function RoomForm({ onAdd, onCancel, priceMap, editRoom, customItems: cus
         b: (parseFloat(lB) || 0) / 100,
         c: (parseFloat(lC) || 0) / 100,
         d: (parseFloat(lD) || 0) / 100,
+        e: (parseFloat(lE) || 0) / 100,
       };
       const err = validateLShape(dims);
       if (err) { setShapeError(err); return; }
       lShapeDims = dims;
-      lengthM = dims.a; // bounding box width
-      widthM = dims.c;  // bounding box height
+      lengthM = dims.a;         // bounding box width
+      widthM = dims.b + dims.d; // bounding box height (= left wall F)
     } else if (shape === "t-shape") {
       const dims = {
         a: (parseFloat(tA) || 0) / 100,
@@ -278,7 +283,7 @@ export function RoomForm({ onAdd, onCancel, priceMap, editRoom, customItems: cus
     if (!editRoom) {
       setName("");
       setLength(""); setWidth("");
-      setLA(""); setLB(""); setLC(""); setLD("");
+      setLA(""); setLB(""); setLC(""); setLD(""); setLE("");
       setTA(""); setTB(""); setTC(""); setTD("");
       setSpotsCount("0"); setChandelierCount("0"); setChandelierInstallCount("0");
       setCornersCount(String(getDefaultCorners(shape)));
@@ -377,31 +382,43 @@ export function RoomForm({ onAdd, onCancel, priceMap, editRoom, customItems: cus
 
       {shape === "l-shape" && (
         <div className="space-y-3">
-          <RoomShapeSvg shape="l-shape" dims={{ a: lA, b: lB, c: lC, d: lD }} activeSide={activeSide} />
+          <RoomShapeSvg shape="l-shape" dims={{ a: lA, b: lB, c: lC, d: lD, e: lE }} activeSide={activeSide} />
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <Label htmlFor="lA" className="text-xs">A — ширина верха (см)</Label>
+              <Label htmlFor="lA" className="text-xs">A — верх →</Label>
               <Input id="lA" type="number" step="1" min="1" value={lA}
                 onChange={(e) => setLA(e.target.value)} placeholder="500" inputMode="numeric"
                 onFocus={() => setActiveSide("a")} onBlur={() => setActiveSide(null)} required />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="lB" className="text-xs">B — высота правой (см)</Label>
+              <Label htmlFor="lB" className="text-xs">B — правая ↓</Label>
               <Input id="lB" type="number" step="1" min="1" value={lB}
                 onChange={(e) => setLB(e.target.value)} placeholder="200" inputMode="numeric"
                 onFocus={() => setActiveSide("b")} onBlur={() => setActiveSide(null)} required />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="lC" className="text-xs">C — высота левой (см)</Label>
+              <Label htmlFor="lC" className="text-xs">C — выступ ←</Label>
               <Input id="lC" type="number" step="1" min="1" value={lC}
-                onChange={(e) => setLC(e.target.value)} placeholder="400" inputMode="numeric"
+                onChange={(e) => setLC(e.target.value)} placeholder="200" inputMode="numeric"
                 onFocus={() => setActiveSide("c")} onBlur={() => setActiveSide(null)} required />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="lD" className="text-xs">D — ширина низа (см)</Label>
+              <Label htmlFor="lD" className="text-xs">D — внутренняя ↓</Label>
               <Input id="lD" type="number" step="1" min="1" value={lD}
-                onChange={(e) => setLD(e.target.value)} placeholder="250" inputMode="numeric"
+                onChange={(e) => setLD(e.target.value)} placeholder="300" inputMode="numeric"
                 onFocus={() => setActiveSide("d")} onBlur={() => setActiveSide(null)} required />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="lE" className="text-xs">E — низ ←</Label>
+              <Input id="lE" type="number" step="1" min="1" value={lE}
+                onChange={(e) => setLE(e.target.value)} placeholder="300" inputMode="numeric"
+                onFocus={() => setActiveSide("e")} onBlur={() => setActiveSide(null)} required />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">F — левая ↑ (авто)</Label>
+              <div className="h-9 flex items-center px-3 rounded-md border bg-muted text-sm text-muted-foreground">
+                {(parseFloat(lB) || 0) + (parseFloat(lD) || 0) || "—"} см
+              </div>
             </div>
           </div>
         </div>

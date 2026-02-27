@@ -2,14 +2,15 @@
 
 interface RoomShapeSvgProps {
   shape: "l-shape" | "t-shape";
-  dims: { a: string; b: string; c: string; d: string };
-  activeSide?: "a" | "b" | "c" | "d" | null;
+  dims: { a: string; b: string; c: string; d: string; e?: string };
+  activeSide?: "a" | "b" | "c" | "d" | "e" | null;
 }
 
 const ACTIVE_COLOR = "#F97316"; // orange
 const DEFAULT_COLOR = "#1e3a5f";
 const FILL_COLOR = "#1e3a5f";
 const LABEL_SIZE = 11;
+const DERIVED_COLOR = "#6b7280"; // gray for derived values
 
 function dimLabel(val: string, suffix = " см"): string {
   const n = parseFloat(val);
@@ -18,96 +19,129 @@ function dimLabel(val: string, suffix = " см"): string {
 }
 
 export function RoomShapeSvg({ shape, dims, activeSide }: RoomShapeSvgProps) {
-  const a = parseFloat(dims.a) || 100;
-  const b = parseFloat(dims.b) || 40;
-  const c = parseFloat(dims.c) || (shape === "l-shape" ? 80 : 40);
-  const d = parseFloat(dims.d) || (shape === "l-shape" ? 40 : 60);
-
-  if (shape === "l-shape") return renderLShape(a, b, c, d, dims, activeSide);
-  return renderTShape(a, b, c, d, dims, activeSide);
+  if (shape === "l-shape") return renderLShape(dims, activeSide);
+  return renderTShape(dims, activeSide);
 }
 
 function sideColor(side: string, activeSide?: string | null): string {
   return side === activeSide ? ACTIVE_COLOR : DEFAULT_COLOR;
 }
 
+/**
+ * L-shape: 6 sides clockwise from top-left
+ *
+ *          A (→)
+ *     1──────────2
+ *     │          │ B (↓)
+ *  F  │     4────3
+ *  (↑)│     │ C (←)
+ *     │     │ D (↓)
+ *     6─────5
+ *        E (←)
+ */
 function renderLShape(
-  a: number, b: number, c: number, d: number,
-  dims: { a: string; b: string; c: string; d: string },
+  dims: { a: string; b: string; c: string; d: string; e?: string },
   activeSide?: string | null
 ) {
-  // Normalize to fit in viewBox with padding
-  const maxDim = Math.max(a, c);
-  const scale = 140 / maxDim;
+  const a = parseFloat(dims.a) || 100;
+  const b = parseFloat(dims.b) || 40;
+  const c = parseFloat(dims.c) || 40;
+  const d = parseFloat(dims.d) || 60;
+  const e = parseFloat(dims.e ?? "") || Math.max(a - c, 20);
+
+  const totalH = b + d;
+  const maxDim = Math.max(a, totalH);
+  const scale = 130 / maxDim;
   const sa = a * scale;
   const sb = b * scale;
   const sc = c * scale;
   const sd = d * scale;
-  const ox = 30; // offset x
-  const oy = 20; // offset y
+  const se = e * scale;
+  const ox = 30;
+  const oy = 20;
 
-  // L-shape path (clockwise from top-left)
+  // 6 points clockwise from top-left
   const points = [
-    [ox, oy],                    // top-left
-    [ox + sa, oy],               // top-right
-    [ox + sa, oy + sb],          // right step
-    [ox + sd, oy + sb],          // inner corner
-    [ox + sd, oy + sc],          // bottom-right
-    [ox, oy + sc],               // bottom-left
+    [ox, oy],                       // 1 top-left
+    [ox + sa, oy],                  // 2 top-right
+    [ox + sa, oy + sb],            // 3 right step
+    [ox + sa - sc, oy + sb],       // 4 inner corner
+    [ox + sa - sc, oy + sb + sd],  // 5 bottom-right
+    [ox, oy + sb + sd],            // 6 bottom-left
   ];
 
   const path = points.map((p, i) => `${i === 0 ? "M" : "L"} ${p[0]} ${p[1]}`).join(" ") + " Z";
 
+  // F = B + D (derived, left wall)
+  const fVal = (parseFloat(dims.b) || 0) + (parseFloat(dims.d) || 0);
+
   return (
-    <svg viewBox="0 0 200 200" className="w-full max-w-[200px] h-auto mx-auto">
+    <svg viewBox="0 0 220 210" className="w-full max-w-[220px] h-auto mx-auto">
       <path d={path} fill={FILL_COLOR} fillOpacity={0.08} stroke={DEFAULT_COLOR} strokeWidth={1.5} />
 
-      {/* Side A - top */}
-      <line x1={ox} y1={oy} x2={ox + sa} y2={oy}
+      {/* A — top (→) */}
+      <line x1={points[0][0]} y1={points[0][1]} x2={points[1][0]} y2={points[1][1]}
         stroke={sideColor("a", activeSide)} strokeWidth={activeSide === "a" ? 3 : 1.5} />
       <text x={ox + sa / 2} y={oy - 6} textAnchor="middle" fontSize={LABEL_SIZE}
         fill={sideColor("a", activeSide)} fontWeight={activeSide === "a" ? 700 : 500}>
-        {dimLabel(dims.a)}
+        A: {dimLabel(dims.a)}
       </text>
 
-      {/* Side B - right arm */}
-      <line x1={ox + sa} y1={oy} x2={ox + sa} y2={oy + sb}
+      {/* B — right (↓) */}
+      <line x1={points[1][0]} y1={points[1][1]} x2={points[2][0]} y2={points[2][1]}
         stroke={sideColor("b", activeSide)} strokeWidth={activeSide === "b" ? 3 : 1.5} />
-      <text x={ox + sa + 8} y={oy + sb / 2 + 4} textAnchor="start" fontSize={LABEL_SIZE}
+      <text x={points[1][0] + 6} y={oy + sb / 2 + 4} textAnchor="start" fontSize={LABEL_SIZE}
         fill={sideColor("b", activeSide)} fontWeight={activeSide === "b" ? 700 : 500}>
-        {dimLabel(dims.b)}
+        B: {dimLabel(dims.b)}
       </text>
 
-      {/* Side C - left full height */}
-      <line x1={ox} y1={oy} x2={ox} y2={oy + sc}
+      {/* C — step left (←) */}
+      <line x1={points[2][0]} y1={points[2][1]} x2={points[3][0]} y2={points[3][1]}
         stroke={sideColor("c", activeSide)} strokeWidth={activeSide === "c" ? 3 : 1.5} />
-      <text x={ox - 8} y={oy + sc / 2 + 4} textAnchor="end" fontSize={LABEL_SIZE}
+      <text x={(points[2][0] + points[3][0]) / 2} y={points[2][1] - 6} textAnchor="middle" fontSize={LABEL_SIZE - 1}
         fill={sideColor("c", activeSide)} fontWeight={activeSide === "c" ? 700 : 500}>
-        {dimLabel(dims.c)}
+        C: {dimLabel(dims.c)}
       </text>
 
-      {/* Side D - bottom width */}
-      <line x1={ox} y1={oy + sc} x2={ox + sd} y2={oy + sc}
+      {/* D — inner down (↓) */}
+      <line x1={points[3][0]} y1={points[3][1]} x2={points[4][0]} y2={points[4][1]}
         stroke={sideColor("d", activeSide)} strokeWidth={activeSide === "d" ? 3 : 1.5} />
-      <text x={ox + sd / 2} y={oy + sc + 14} textAnchor="middle" fontSize={LABEL_SIZE}
+      <text x={points[3][0] + 6} y={oy + sb + sd / 2 + 4} textAnchor="start" fontSize={LABEL_SIZE}
         fill={sideColor("d", activeSide)} fontWeight={activeSide === "d" ? 700 : 500}>
-        {dimLabel(dims.d)}
+        D: {dimLabel(dims.d)}
       </text>
 
-      {/* Inner dashed lines */}
-      <line x1={ox + sd} y1={oy + sb} x2={ox + sd} y2={oy + sc}
-        stroke={DEFAULT_COLOR} strokeWidth={0.5} strokeDasharray="3 2" />
-      <line x1={ox + sd} y1={oy + sb} x2={ox + sa} y2={oy + sb}
-        stroke={DEFAULT_COLOR} strokeWidth={0.5} strokeDasharray="3 2" />
+      {/* E — bottom (←) */}
+      <line x1={points[4][0]} y1={points[4][1]} x2={points[5][0]} y2={points[5][1]}
+        stroke={sideColor("e", activeSide)} strokeWidth={activeSide === "e" ? 3 : 1.5} />
+      <text x={(points[4][0] + points[5][0]) / 2} y={points[4][1] + 14} textAnchor="middle" fontSize={LABEL_SIZE}
+        fill={sideColor("e", activeSide)} fontWeight={activeSide === "e" ? 700 : 500}>
+        E: {dims.e ? dimLabel(dims.e) : `${e} см`}
+      </text>
+
+      {/* F — left wall (derived, shown as info) */}
+      <line x1={points[5][0]} y1={points[5][1]} x2={points[0][0]} y2={points[0][1]}
+        stroke={DERIVED_COLOR} strokeWidth={1} strokeDasharray="4 2" />
+      <text x={ox - 6} y={oy + (sb + sd) / 2 + 4} textAnchor="end" fontSize={LABEL_SIZE - 1}
+        fill={DERIVED_COLOR} fontWeight={400}>
+        F: {fVal > 0 ? `${fVal} см` : "?"}
+      </text>
     </svg>
   );
 }
 
+/**
+ * T-shape (unchanged from before, 4 dimensions)
+ */
 function renderTShape(
-  a: number, b: number, c: number, d: number,
   dims: { a: string; b: string; c: string; d: string },
   activeSide?: string | null
 ) {
+  const a = parseFloat(dims.a) || 100;
+  const b = parseFloat(dims.b) || 40;
+  const c = parseFloat(dims.c) || 40;
+  const d = parseFloat(dims.d) || 60;
+
   const totalH = b + d;
   const maxDim = Math.max(a, totalH);
   const scale = 140 / maxDim;

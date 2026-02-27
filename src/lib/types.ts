@@ -7,10 +7,13 @@ import type { CanvasType } from "./constants";
 export type RoomShape = "rectangle" | "l-shape" | "t-shape";
 
 export interface LShapeDimensions {
-  a: number; // top width (meters)
-  b: number; // right arm height (meters)
-  c: number; // total left height (meters)
-  d: number; // bottom width (meters)
+  a: number; // top width (meters) →
+  b: number; // right side going down (meters) ↓
+  c: number; // step going left (meters) ← (new: clockwise)
+  d: number; // inner side going down (meters) ↓ (new: clockwise)
+  e?: number; // bottom width (meters) ← (new: clockwise, if undefined = old format)
+  // Left wall F = b + d (derived)
+  // Constraint: a = c + e
 }
 
 export interface TShapeDimensions {

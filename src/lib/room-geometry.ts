@@ -9,11 +9,26 @@ export function getRoomShape(room: RoomInput): RoomShape {
   return room.shape || "rectangle";
 }
 
+/**
+ * Detect if LShapeDimensions uses old format (4 fields) or new format (5 fields, clockwise).
+ * Old: a=top, b=right_height, c=full_left_height, d=bottom_width
+ * New: a=top, b=right(↓), c=step(←), d=inner(↓), e=bottom(←)
+ */
+function isNewLShapeFormat(dims: LShapeDimensions): boolean {
+  return dims.e !== undefined && dims.e > 0;
+}
+
 /** Area in m² based on room shape */
 export function computeArea(room: RoomInput): number {
   const shape = getRoomShape(room);
 
   if (shape === "l-shape" && room.lShapeDims) {
+    if (isNewLShapeFormat(room.lShapeDims)) {
+      const { a, b, d, e } = room.lShapeDims;
+      // New format: area = A*B + E*D
+      return a * b + (e!) * d;
+    }
+    // Old format: area = a*b + d*(c-b)
     const { a, b, c, d } = room.lShapeDims;
     return a * b + d * (c - b);
   }
@@ -31,6 +46,12 @@ export function computePerimeter(room: RoomInput): number {
   const shape = getRoomShape(room);
 
   if (shape === "l-shape" && room.lShapeDims) {
+    if (isNewLShapeFormat(room.lShapeDims)) {
+      const { a, b, c, d, e } = room.lShapeDims;
+      // P = A + B + C + D + E + F, where F = B + D
+      return a + 2 * b + c + 2 * d + (e!);
+    }
+    // Old format
     const { a, c } = room.lShapeDims;
     return 2 * (a + c);
   }
@@ -48,6 +69,10 @@ export function getBoundingBoxMinDim(room: RoomInput): number {
   const shape = getRoomShape(room);
 
   if (shape === "l-shape" && room.lShapeDims) {
+    if (isNewLShapeFormat(room.lShapeDims)) {
+      const { a, b, d } = room.lShapeDims;
+      return Math.min(a, b + d);
+    }
     const { a, c } = room.lShapeDims;
     return Math.min(a, c);
   }
@@ -72,8 +97,18 @@ export function getDefaultCorners(shape: RoomShape): number {
   }
 }
 
-/** Validate L-shape: a > d, c > b, all positive */
+/** Validate L-shape (new 5-field format): A = C + E, all positive */
 export function validateLShape(dims: LShapeDimensions): string | null {
+  if (dims.e !== undefined) {
+    // New format (clockwise A,B,C,D,E)
+    if (dims.a <= 0 || dims.b <= 0 || dims.c <= 0 || dims.d <= 0 || dims.e <= 0)
+      return "Все размеры должны быть больше 0";
+    const tolerance = 0.005; // 0.5cm tolerance for rounding
+    if (Math.abs(dims.a - (dims.c + dims.e)) > tolerance)
+      return `Верх (A) должен равняться выступу (C) + низу (E): ${dims.a}м ≠ ${dims.c}+${dims.e}=${(dims.c + dims.e).toFixed(2)}м`;
+    return null;
+  }
+  // Old format fallback
   if (dims.a <= 0 || dims.b <= 0 || dims.c <= 0 || dims.d <= 0)
     return "Все размеры должны быть больше 0";
   if (dims.a <= dims.d)
