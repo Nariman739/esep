@@ -8,6 +8,7 @@ interface ConfirmSectionProps {
   estimateId: string;
   calc: CalculationResult;
   total: number;
+  discountPercent: number;
   initialConfirmed: boolean;
   brandColor: string;
 }
@@ -16,6 +17,7 @@ export function ConfirmSection({
   estimateId,
   calc,
   total,
+  discountPercent,
   initialConfirmed,
   brandColor,
 }: ConfirmSectionProps) {
@@ -72,9 +74,19 @@ export function ConfirmSection({
           <p className="text-sm font-semibold" style={{ color: brandColor }}>
             Стоимость работ
           </p>
+          {discountPercent > 0 && (
+            <p className="text-sm text-gray-400 line-through mt-1">
+              {formatPrice(calc.total)}
+            </p>
+          )}
           <p className="text-3xl font-bold text-gray-900 mt-1">
             {formatPrice(total)}
           </p>
+          {discountPercent > 0 && (
+            <p className="text-xs text-emerald-600 mt-0.5">
+              Скидка {discountPercent}%
+            </p>
+          )}
           {calc.totalArea > 0 && (
             <p className="text-xs text-gray-500 mt-0.5">
               {formatPrice(Math.round(total / calc.totalArea))}/м²

@@ -49,6 +49,7 @@ function CalculatorContent() {
   const [editingRoomId, setEditingRoomId] = useState<string | null>(null);
   const [saveOpen, setSaveOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [discountPercent, setDiscountPercent] = useState(0);
   const [priceMap, setPriceMap] = useState<Record<string, number>>({});
   const [loadingFrom, setLoadingFrom] = useState(false);
   const loadedRef = useRef(false);
@@ -89,6 +90,9 @@ function CalculatorContent() {
     if (!result) return;
     setSaving(true);
 
+    const discountAmount = Math.round(result.total * discountPercent / 100);
+    const finalTotal = result.total - discountAmount;
+
     try {
       const res = await fetch("/api/estimates", {
         method: "POST",
@@ -97,7 +101,8 @@ function CalculatorContent() {
           roomsData: result.rooms,
           calculationData: result,
           totalArea: result.totalArea,
-          total: result.total,
+          total: finalTotal,
+          discountPercent,
           clientName: clientName || undefined,
           clientPhone: clientPhone || undefined,
         }),
@@ -136,7 +141,10 @@ function CalculatorContent() {
       <div className="space-y-6">
         <CalculationResults
           result={result}
-          onSave={() => setSaveOpen(true)}
+          onSave={(dp) => {
+            setDiscountPercent(dp);
+            setSaveOpen(true);
+          }}
           onReset={reset}
         />
         <SaveDialog

@@ -37,7 +37,8 @@ export const PRODUCT_ITEMS: ProductItem[] = [
   { code: "spot_double", name: "Споты двойные LED", unit: "шт.", defaultPrice: 2500, category: "spot", description: "Двойные LED-споты" },
 
   // Люстры
-  { code: "chandelier", name: "Люстра (закладная)", unit: "шт.", defaultPrice: 2000, category: "chandelier" },
+  { code: "chandelier", name: "Закладная под люстру", unit: "шт.", defaultPrice: 2000, category: "chandelier" },
+  { code: "chandelier_install", name: "Установка люстры", unit: "шт.", defaultPrice: 5000, category: "chandelier" },
   { code: "transformer", name: "Трансформатор", unit: "шт.", defaultPrice: 3000, category: "chandelier" },
   { code: "track_magnetic", name: "Трек магнитный", unit: "м.п.", defaultPrice: 5000, category: "chandelier" },
   { code: "light_line", name: "Световая линия", unit: "м.п.", defaultPrice: 4500, category: "chandelier" },

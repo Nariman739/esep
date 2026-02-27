@@ -65,7 +65,6 @@ function formatPriceCompact(n: number): string {
 
 const SHAPE_OPTIONS: { value: RoomShape; label: string; icon: string }[] = [
   { value: "rectangle", label: "Прямоугольник", icon: "▭" },
-  { value: "square", label: "Квадрат", icon: "□" },
   { value: "l-shape", label: "Г-образная", icon: "Г" },
   { value: "t-shape", label: "Т-образная", icon: "Т" },
 ];
@@ -75,12 +74,14 @@ export function RoomForm({ onAdd, onCancel, priceMap, editRoom, customItems: cus
   const er = editRoom; // shorthand
 
   const [name, setName] = useState(er?.name ?? "");
-  const [shape, setShape] = useState<RoomShape>(er?.shape ?? "rectangle");
+  // Legacy "square" rooms treated as rectangle
+  const erShape = er?.shape as string | undefined;
+  const [shape, setShape] = useState<RoomShape>(erShape === "square" ? "rectangle" : (er?.shape ?? "rectangle"));
 
-  // Rectangle/Square dims (cm) — convert from meters
-  const [length, setLength] = useState(er && (er.shape === "rectangle" || !er.shape) ? String(Math.round(er.length * 100)) : "");
-  const [width, setWidth] = useState(er && (er.shape === "rectangle" || !er.shape) ? String(Math.round(er.width * 100)) : "");
-  const [side, setSide] = useState(er?.shape === "square" ? String(Math.round(er.length * 100)) : "");
+  // Rectangle dims (cm) — convert from meters (also handles legacy "square" rooms)
+  const isRectLike = er && (er.shape === "rectangle" || erShape === "square" || !er.shape);
+  const [length, setLength] = useState(isRectLike ? String(Math.round(er.length * 100)) : "");
+  const [width, setWidth] = useState(isRectLike ? String(Math.round(er.width * 100)) : "");
 
   // L-shape dims (cm)
   const [lA, setLA] = useState(er?.lShapeDims ? String(Math.round(er.lShapeDims.a * 100)) : "");
@@ -102,6 +103,7 @@ export function RoomForm({ onAdd, onCancel, priceMap, editRoom, customItems: cus
   const [canvasType, setCanvasType] = useState<CanvasType>(er?.canvasType ?? "mat");
   const [spotsCount, setSpotsCount] = useState(er ? String(er.spotsCount) : "0");
   const [chandelierCount, setChandelierCount] = useState(er ? String(er.chandelierCount) : "0");
+  const [chandelierInstallCount, setChandelierInstallCount] = useState(er ? String(er.chandelierInstallCount ?? 0) : "0");
   const [cornersCount, setCornersCount] = useState(er ? String(er.cornersCount) : "4");
   const [curtainRodLength, setCurtainRodLength] = useState(er ? String(Math.round(er.curtainRodLength * 100)) : "0");
   const [pipeBypasses, setPipeBypasses] = useState(er ? String(er.pipeBypasses) : "0");
@@ -172,11 +174,6 @@ export function RoomForm({ onAdd, onCancel, priceMap, editRoom, customItems: cus
       if (!l || !w || l <= 0 || w <= 0) return null;
       return { area: (l * w) / 10000, perimeter: (2 * (l + w)) / 100 };
     }
-    if (shape === "square") {
-      const s = parseFloat(side);
-      if (!s || s <= 0) return null;
-      return { area: (s * s) / 10000, perimeter: (4 * s) / 100 };
-    }
     if (shape === "l-shape") {
       const a = parseFloat(lA), b = parseFloat(lB), c = parseFloat(lC), d = parseFloat(lD);
       if (!a || !b || !c || !d) return null;
@@ -217,11 +214,6 @@ export function RoomForm({ onAdd, onCancel, priceMap, editRoom, customItems: cus
       lengthM = (parseFloat(length) || 0) / 100;
       widthM = (parseFloat(width) || 0) / 100;
       if (lengthM <= 0 || widthM <= 0) return;
-    } else if (shape === "square") {
-      const s = (parseFloat(side) || 0) / 100;
-      if (s <= 0) return;
-      lengthM = s;
-      widthM = s;
     } else if (shape === "l-shape") {
       const dims = {
         a: (parseFloat(lA) || 0) / 100,
@@ -257,6 +249,7 @@ export function RoomForm({ onAdd, onCancel, priceMap, editRoom, customItems: cus
       canvasType,
       spotsCount: parseInt(spotsCount) || 0,
       chandelierCount: parseInt(chandelierCount) || 0,
+      chandelierInstallCount: parseInt(chandelierInstallCount) || 0,
       trackMagneticLength: 0,
       lightLineLength: 0,
       curtainRodLength: curtainM,
@@ -284,10 +277,10 @@ export function RoomForm({ onAdd, onCancel, priceMap, editRoom, customItems: cus
     // Only reset form when adding (not editing)
     if (!editRoom) {
       setName("");
-      setLength(""); setWidth(""); setSide("");
+      setLength(""); setWidth("");
       setLA(""); setLB(""); setLC(""); setLD("");
       setTA(""); setTB(""); setTC(""); setTD("");
-      setSpotsCount("0"); setChandelierCount("0");
+      setSpotsCount("0"); setChandelierCount("0"); setChandelierInstallCount("0");
       setCornersCount(String(getDefaultCorners(shape)));
       setCurtainRodLength("0"); setPipeBypasses("0");
       setGardinaLength("0"); setPodshtornikLength("0");
@@ -329,7 +322,7 @@ export function RoomForm({ onAdd, onCancel, priceMap, editRoom, customItems: cus
       {/* Shape selector */}
       <div className="space-y-2">
         <Label>Форма комнаты</Label>
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           {SHAPE_OPTIONS.map((opt) => (
             <button
               key={opt.value}
@@ -379,23 +372,6 @@ export function RoomForm({ onAdd, onCancel, priceMap, editRoom, customItems: cus
               required
             />
           </div>
-        </div>
-      )}
-
-      {shape === "square" && (
-        <div className="space-y-2">
-          <Label htmlFor="side">Сторона (см)</Label>
-          <Input
-            id="side"
-            type="number"
-            step="1"
-            min="1"
-            value={side}
-            onChange={(e) => setSide(e.target.value)}
-            placeholder="400"
-            inputMode="numeric"
-            required
-          />
         </div>
       )}
 
@@ -519,7 +495,7 @@ export function RoomForm({ onAdd, onCancel, priceMap, editRoom, customItems: cus
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="chandeliers">Люстры</Label>
+          <Label htmlFor="chandeliers">Закладные</Label>
           <Input
             id="chandeliers"
             type="number"
@@ -539,6 +515,22 @@ export function RoomForm({ onAdd, onCancel, priceMap, editRoom, customItems: cus
           />
         </div>
       </div>
+
+      {/* Chandelier installation — shown when закладные > 0 */}
+      {parseInt(chandelierCount) > 0 && (
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-2">
+            <Label htmlFor="chandelierInstall">Установка люстр</Label>
+            <Input
+              id="chandelierInstall"
+              type="number"
+              min="0"
+              {...zeroFieldProps(chandelierInstallCount, setChandelierInstallCount)}
+              inputMode="numeric"
+            />
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">

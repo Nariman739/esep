@@ -153,9 +153,19 @@ export default async function PublicKpPage({
           {/* Price summary */}
           <div className="mt-6 text-center">
             <p className="text-white/50 text-xs mb-0.5">Стоимость</p>
+            {estimate.discountPercent > 0 && (
+              <p className="text-white/40 text-sm line-through mb-0.5">
+                {formatPrice(calc.total)}
+              </p>
+            )}
             <p className="text-white font-bold text-2xl leading-none">
               {formatPrice(estimate.total || estimate.standardTotal || 0)}
             </p>
+            {estimate.discountPercent > 0 && (
+              <p className="text-emerald-300 text-xs mt-1">
+                Скидка {estimate.discountPercent}%
+              </p>
+            )}
           </div>
         </div>
 
@@ -180,6 +190,7 @@ export default async function PublicKpPage({
           estimateId={estimate.id}
           calc={calc}
           total={estimate.total || estimate.standardTotal || 0}
+          discountPercent={estimate.discountPercent}
           initialConfirmed={estimate.status === "CONFIRMED"}
           brandColor={brandColor}
         />
@@ -203,7 +214,7 @@ export default async function PublicKpPage({
               {calc.rooms.map((room, i) => {
                 const area = computeArea(room);
                 const shape = room.shape || "rectangle";
-                const dimLabel = (shape === "rectangle" || shape === "square")
+                const dimLabel = (shape === "rectangle" || (shape as string) === "square")
                   ? `${Math.round(room.length * 100)}×${Math.round(room.width * 100)} см`
                   : shape === "l-shape" ? "Г-образная" : shape === "t-shape" ? "Т-образная" : "";
                 return (

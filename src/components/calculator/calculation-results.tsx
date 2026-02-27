@@ -3,14 +3,15 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { Save, RotateCcw, ChevronDown, ChevronUp } from "lucide-react";
+import { Save, RotateCcw, ChevronDown, ChevronUp, Percent } from "lucide-react";
 import { formatPrice } from "@/lib/format";
 import type { CalculationResult } from "@/lib/types";
 
 interface CalculationResultsProps {
   result: CalculationResult;
-  onSave: () => void;
+  onSave: (discountPercent: number) => void;
   onReset: () => void;
 }
 
@@ -20,6 +21,12 @@ export function CalculationResults({
   onReset,
 }: CalculationResultsProps) {
   const [expanded, setExpanded] = useState(false);
+  const [discountStr, setDiscountStr] = useState("0");
+
+  const discountPercent = Math.min(100, Math.max(0, parseFloat(discountStr) || 0));
+  const discountAmount = Math.round(result.total * discountPercent / 100);
+  const finalTotal = result.total - discountAmount;
+  const finalPricePerM2 = result.totalArea > 0 ? Math.round(finalTotal / result.totalArea) : 0;
 
   return (
     <div className="space-y-6">
@@ -40,9 +47,23 @@ export function CalculationResults({
         <CardHeader className="bg-blue-50 pb-3">
           <CardTitle className="text-[#1e3a5f] text-lg">Итого</CardTitle>
           <div className="space-y-1">
-            <p className="text-2xl sm:text-3xl font-bold">{formatPrice(result.total)}</p>
+            {discountPercent > 0 ? (
+              <>
+                <p className="text-sm text-muted-foreground line-through">
+                  {formatPrice(result.total)}
+                </p>
+                <p className="text-2xl sm:text-3xl font-bold text-green-700">
+                  {formatPrice(finalTotal)}
+                </p>
+                <p className="text-xs text-green-600">
+                  Скидка {discountPercent}% = -{formatPrice(discountAmount)}
+                </p>
+              </>
+            ) : (
+              <p className="text-2xl sm:text-3xl font-bold">{formatPrice(result.total)}</p>
+            )}
             <p className="text-sm text-muted-foreground">
-              {formatPrice(result.pricePerM2)}/м²
+              {formatPrice(finalPricePerM2)}/м²
             </p>
             {result.minOrderApplied && (
               <p className="text-xs text-amber-600">
@@ -111,15 +132,39 @@ export function CalculationResults({
 
               <div className="flex justify-between font-bold text-lg">
                 <span>ИТОГО</span>
-                <span>{formatPrice(result.total)}</span>
+                <span>{formatPrice(finalTotal)}</span>
               </div>
+              {discountPercent > 0 && (
+                <p className="text-xs text-green-600 text-center">
+                  Со скидкой {discountPercent}% (-{formatPrice(discountAmount)})
+                </p>
+              )}
               <p className="text-xs text-muted-foreground text-center">
-                {result.totalArea > 0 && `${formatPrice(result.pricePerM2)} за м²`}
+                {result.totalArea > 0 && `${formatPrice(finalPricePerM2)} за м²`}
               </p>
             </div>
           )}
         </CardContent>
       </Card>
+
+      {/* Discount input */}
+      <div className="flex items-center gap-3 justify-center">
+        <Percent className="h-4 w-4 text-muted-foreground shrink-0" />
+        <span className="text-sm text-muted-foreground whitespace-nowrap">Скидка клиенту:</span>
+        <Input
+          type="number"
+          min="0"
+          max="100"
+          step="1"
+          value={discountStr}
+          onChange={(e) => setDiscountStr(e.target.value)}
+          onFocus={(e) => { if (e.target.value === "0") setDiscountStr(""); }}
+          onBlur={(e) => { if (e.target.value === "") setDiscountStr("0"); }}
+          className="w-20 text-center"
+          inputMode="numeric"
+        />
+        <span className="text-sm text-muted-foreground">%</span>
+      </div>
 
       <p className="text-xs text-muted-foreground text-center">
         * Расчёт предварительный. Точная стоимость определяется после замера.
@@ -128,7 +173,7 @@ export function CalculationResults({
       <div className="flex justify-center">
         <Button
           size="lg"
-          onClick={onSave}
+          onClick={() => onSave(discountPercent)}
           className="bg-[#1e3a5f] hover:bg-[#152d4a]"
         >
           <Save className="h-4 w-4 mr-2" />

@@ -97,7 +97,7 @@ function calculateRoom(
     if (spotItem) items.push(spotItem);
   }
 
-  // Chandeliers
+  // Chandeliers (закладные)
   if (room.chandelierCount > 0) {
     const chandelierItem = makeLineItem("chandelier", room.chandelierCount, prices);
     if (chandelierItem) items.push(chandelierItem);
@@ -108,6 +108,13 @@ function calculateRoom(
       const transformerItem = makeLineItem("transformer", room.chandelierCount, prices);
       if (transformerItem) items.push(transformerItem);
     }
+  }
+
+  // Chandelier installation (установка люстр)
+  const installCount = room.chandelierInstallCount ?? 0;
+  if (installCount > 0) {
+    const installItem = makeLineItem("chandelier_install", installCount, prices);
+    if (installItem) items.push(installItem);
   }
 
   // Track magnetic

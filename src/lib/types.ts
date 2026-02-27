@@ -4,7 +4,7 @@ import type { CanvasType } from "./constants";
 // Room Shapes
 // ============================================
 
-export type RoomShape = "rectangle" | "square" | "l-shape" | "t-shape";
+export type RoomShape = "rectangle" | "l-shape" | "t-shape";
 
 export interface LShapeDimensions {
   a: number; // top width (meters)
@@ -33,6 +33,7 @@ export interface RoomInput {
   canvasType: CanvasType;
   spotsCount: number;
   chandelierCount: number;
+  chandelierInstallCount: number;
   trackMagneticLength: number;
   lightLineLength: number;
   curtainRodLength: number;

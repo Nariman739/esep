@@ -11,7 +11,6 @@ import { CANVAS_TYPES } from "@/lib/constants";
 const SHAPE_LABELS: Record<string, string> = {
   "l-shape": "Г-образная",
   "t-shape": "Т-образная",
-  square: "Квадрат",
 };
 
 interface RoomCardProps {
@@ -53,7 +52,7 @@ export function RoomCard({ room, index, onDuplicate, onRemove, onEdit }: RoomCar
               )}
             </div>
             <div className="text-sm text-muted-foreground flex flex-wrap gap-x-3 gap-y-0.5">
-              {(shape === "rectangle" || shape === "square") ? (
+              {(shape === "rectangle" || (shape as string) === "square") ? (
                 <span>{lengthCm}×{widthCm} см = {area} м²</span>
               ) : (
                 <span>{area} м²</span>
@@ -62,7 +61,8 @@ export function RoomCard({ room, index, onDuplicate, onRemove, onEdit }: RoomCar
             </div>
             <div className="flex flex-wrap gap-2 mt-1.5 text-xs text-muted-foreground">
               {room.spotsCount > 0 && <span>Споты: {room.spotsCount}</span>}
-              {room.chandelierCount > 0 && <span>Люстры: {room.chandelierCount}</span>}
+              {room.chandelierCount > 0 && <span>Закладные: {room.chandelierCount}</span>}
+              {(room.chandelierInstallCount ?? 0) > 0 && <span>Уст. люстр: {room.chandelierInstallCount}</span>}
               {room.cornersCount > 0 && <span>Углы: {room.cornersCount}</span>}
               {room.curtainRodLength > 0 && <span>Карниз: {Math.round(room.curtainRodLength * 100)} см</span>}
               {(room.gardinaLength ?? 0) > 0 && <span>Гардина: {Math.round(room.gardinaLength * 100)} см</span>}
