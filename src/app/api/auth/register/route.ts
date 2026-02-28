@@ -6,14 +6,16 @@ import { PRODUCT_ITEMS } from "@/lib/constants";
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, password, firstName, companyName } = body;
+    const { email: rawEmail, password, firstName, companyName } = body;
 
-    if (!email || !password || !firstName) {
+    if (!rawEmail || !password || !firstName) {
       return NextResponse.json(
         { error: "Email, пароль и имя обязательны" },
         { status: 400 }
       );
     }
+
+    const email = rawEmail.toLowerCase().trim();
 
     if (password.length < 6) {
       return NextResponse.json(

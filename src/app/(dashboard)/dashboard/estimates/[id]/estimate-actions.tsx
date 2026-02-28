@@ -92,14 +92,14 @@ export function EstimateActions({
         WhatsApp
       </Button>
       <Button variant="outline" size="sm" asChild>
-        <a href={`/api/estimates/${estimateId}/pdf`} download>
+        <a href={`/api/estimates/${estimateId}/pdf`}>
           <Download className="h-4 w-4 mr-2" />
           Скачать КП
         </a>
       </Button>
       {contractConfigured && (
         <Button variant="outline" size="sm" asChild>
-          <a href={`/api/estimates/${estimateId}/contract`} download>
+          <a href={`/api/estimates/${estimateId}/contract`}>
             <FileText className="h-4 w-4 mr-2" />
             Договор
           </a>
@@ -107,7 +107,7 @@ export function EstimateActions({
       )}
       {contractConfigured && status === "CONFIRMED" && (
         <Button variant="outline" size="sm" asChild>
-          <a href={`/api/estimates/${estimateId}/act`} download>
+          <a href={`/api/estimates/${estimateId}/act`}>
             <ClipboardCheck className="h-4 w-4 mr-2" />
             Акт
           </a>

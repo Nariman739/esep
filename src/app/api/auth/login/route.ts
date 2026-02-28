@@ -5,14 +5,16 @@ import { verifyPassword, createSession } from "@/lib/auth";
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, password } = body;
+    const { email: rawEmail, password } = body;
 
-    if (!email || !password) {
+    if (!rawEmail || !password) {
       return NextResponse.json(
         { error: "Введите email и пароль" },
         { status: 400 }
       );
     }
+
+    const email = rawEmail.toLowerCase().trim();
 
     const master = await prisma.master.findUnique({ where: { email } });
     if (!master) {
