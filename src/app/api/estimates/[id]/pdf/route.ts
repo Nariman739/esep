@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import type { CalculationResult, RoomResult } from "@/lib/types";
+import chromium from "@sparticuz/chromium";
+import puppeteerCore from "puppeteer-core";
 
 function fmtPrice(n: number | undefined | null): string {
   const val = Number(n) || 0;
@@ -16,6 +18,8 @@ function escXml(s: unknown): string {
 function sanitizeFilename(s: string): string {
   return s.replace(/[^a-zA-Z0-9._-]/g, "_");
 }
+
+export const maxDuration = 30;
 
 export async function GET(
   _request: Request,
@@ -45,7 +49,7 @@ export async function GET(
       ?? (calc as any)?.variants?.find((v: any) => v.type === "standard")?.rooms
       ?? [];
 
-    // Build HTML for PDF-like download
+    // Build HTML
     let roomsHtml = "";
     for (const rr of roomResults) {
       let itemsHtml = "";
@@ -82,7 +86,7 @@ export async function GET(
 <head>
   <meta charset="UTF-8">
   <style>
-    @page { margin: 24px; }
+    @page { margin: 20mm; }
     body { font-family: Arial, Helvetica, sans-serif; color: #1f2937; margin: 0; padding: 24px; }
   </style>
 </head>
@@ -123,12 +127,29 @@ export async function GET(
 </body>
 </html>`;
 
+    // Render HTML to PDF via headless Chromium
+    const browser = await puppeteerCore.launch({
+      args: chromium.args,
+      defaultViewport: { width: 1280, height: 720 },
+      executablePath: await chromium.executablePath(),
+      headless: true,
+    });
+
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: "networkidle0" });
+    const pdfBuffer = await page.pdf({
+      format: "A4",
+      printBackground: true,
+      margin: { top: "20mm", right: "15mm", bottom: "20mm", left: "15mm" },
+    });
+    await browser.close();
+
     const filename = sanitizeFilename(`KP-${estimate.clientName || "estimate"}-${estimate.publicId.slice(0, 8)}`);
 
-    return new NextResponse(html, {
+    return new NextResponse(Buffer.from(pdfBuffer), {
       headers: {
-        "Content-Type": "text/html; charset=utf-8",
-        "Content-Disposition": `attachment; filename="${filename}.html"`,
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `attachment; filename="${filename}.pdf"`,
       },
     });
   } catch (error) {
