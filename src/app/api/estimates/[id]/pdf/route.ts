@@ -4,8 +4,7 @@ import { prisma } from "@/lib/prisma";
 import type { CalculationResult, RoomResult } from "@/lib/types";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
-import fs from "fs";
-import path from "path";
+import { ROBOTO_REGULAR, ROBOTO_BOLD } from "@/lib/fonts";
 
 function fmtPrice(n: number | undefined | null): string {
   const val = Number(n) || 0;
@@ -16,11 +15,11 @@ function sanitizeFilename(s: string): string {
   return s.replace(/[^a-zA-Z0-9._-]/g, "_");
 }
 
-function loadFont(doc: jsPDF, filename: string, fontName: string, style: string) {
-  const fontPath = path.join(process.cwd(), "public", "fonts", filename);
-  const fontData = fs.readFileSync(fontPath, { encoding: "latin1" });
-  doc.addFileToVFS(filename, fontData);
-  doc.addFont(filename, fontName, style);
+function registerFonts(doc: jsPDF) {
+  doc.addFileToVFS("Roboto-Regular.ttf", ROBOTO_REGULAR);
+  doc.addFileToVFS("Roboto-Bold.ttf", ROBOTO_BOLD);
+  doc.addFont("Roboto-Regular.ttf", "Roboto", "normal");
+  doc.addFont("Roboto-Bold.ttf", "Roboto", "bold");
 }
 
 export async function GET(
@@ -58,9 +57,8 @@ export async function GET(
     const marginR = 15;
     const contentW = pageW - marginL - marginR;
 
-    // Load Cyrillic fonts
-    loadFont(doc, "Roboto-Regular.ttf", "Roboto", "normal");
-    loadFont(doc, "Roboto-Bold.ttf", "Roboto", "bold");
+    // Register embedded Cyrillic fonts
+    registerFonts(doc);
     doc.setFont("Roboto", "normal");
 
     let y = 20;
