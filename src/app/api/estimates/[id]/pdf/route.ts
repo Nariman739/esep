@@ -14,7 +14,7 @@ function escXml(s: unknown): string {
 }
 
 function sanitizeFilename(s: string): string {
-  return s.replace(/[^a-zA-Zа-яА-Я0-9._-]/g, "_");
+  return s.replace(/[^a-zA-Z0-9._-]/g, "_");
 }
 
 export async function GET(
