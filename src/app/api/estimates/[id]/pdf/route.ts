@@ -2,9 +2,8 @@ import { NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import type { CalculationResult, RoomResult } from "@/lib/types";
-import { jsPDF } from "jspdf";
-import autoTable from "jspdf-autotable";
-import { ROBOTO_REGULAR, ROBOTO_BOLD } from "@/lib/fonts";
+import PDFDocument from "pdfkit";
+import { NOTO_SANS_REGULAR, NOTO_SANS_BOLD } from "@/lib/fonts";
 
 function fmtPrice(n: number | undefined | null): string {
   const val = Number(n) || 0;
@@ -15,11 +14,13 @@ function sanitizeFilename(s: string): string {
   return s.replace(/[^a-zA-Z0-9._-]/g, "_");
 }
 
-function registerFonts(doc: jsPDF) {
-  doc.addFileToVFS("Roboto-Regular.ttf", ROBOTO_REGULAR);
-  doc.addFileToVFS("Roboto-Bold.ttf", ROBOTO_BOLD);
-  doc.addFont("Roboto-Regular.ttf", "Roboto", "normal");
-  doc.addFont("Roboto-Bold.ttf", "Roboto", "bold");
+function collectPdf(doc: PDFKit.PDFDocument): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    doc.on("data", (chunk: Buffer) => chunks.push(chunk));
+    doc.on("end", () => resolve(Buffer.concat(chunks)));
+    doc.on("error", reject);
+  });
 }
 
 export async function GET(
@@ -51,194 +52,153 @@ export async function GET(
       ?? [];
 
     // Create PDF
-    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-    const pageW = doc.internal.pageSize.getWidth();
-    const marginL = 15;
-    const marginR = 15;
-    const contentW = pageW - marginL - marginR;
+    const doc = new PDFDocument({ size: "A4", margin: 40 });
+    const promise = collectPdf(doc);
+    const pageW = 595.28; // A4 width in points
+    const marginL = 40;
+    const marginR = 40;
+    const rightEdge = pageW - marginR;
 
-    // Register embedded Cyrillic fonts
-    registerFonts(doc);
-    doc.setFont("Roboto", "normal");
+    // Register embedded fonts
+    doc.registerFont("Sans", NOTO_SANS_REGULAR);
+    doc.registerFont("Sans-Bold", NOTO_SANS_BOLD);
 
-    let y = 20;
-
-    // Header: company name + date
-    doc.setFont("Roboto", "bold");
-    doc.setFontSize(18);
-    doc.setTextColor(30, 58, 95); // #1e3a5f
-    doc.text(company, marginL, y);
-
-    doc.setFont("Roboto", "normal");
-    doc.setFontSize(9);
-    doc.setTextColor(107, 114, 128); // #6b7280
-    doc.text("Коммерческое предложение", pageW - marginR, y - 4, { align: "right" });
-    const dateStr = new Date(estimate.createdAt).toLocaleDateString("ru-RU");
-    doc.text(dateStr, pageW - marginR, y + 1, { align: "right" });
+    // === HEADER ===
+    doc.font("Sans-Bold").fontSize(18).fillColor("#1e3a5f")
+      .text(company, marginL, 40, { width: 300 });
 
     if (contactPhone) {
-      doc.setFontSize(9);
-      doc.text(contactPhone, marginL, y + 6);
-      y += 6;
+      doc.font("Sans").fontSize(9).fillColor("#6b7280")
+        .text(contactPhone, marginL, doc.y + 2);
     }
 
-    y += 10;
+    doc.font("Sans").fontSize(9).fillColor("#6b7280")
+      .text("Коммерческое предложение", marginR, 40, { align: "right" });
+    const dateStr = new Date(estimate.createdAt).toLocaleDateString("ru-RU");
+    doc.text(dateStr, marginR, doc.y, { align: "right" });
 
-    // Client info
-    doc.setFontSize(11);
-    doc.setTextColor(31, 41, 55); // #1f2937
+    // === CLIENT INFO ===
+    let y = Math.max(doc.y, 80) + 8;
+
+    doc.fontSize(11).fillColor("#1f2937");
     if (estimate.clientName) {
-      doc.setFont("Roboto", "bold");
-      doc.text("Клиент: ", marginL, y);
-      const klW = doc.getTextWidth("Клиент: ");
-      doc.setFont("Roboto", "normal");
-      doc.text(estimate.clientName, marginL + klW, y);
-      y += 6;
+      doc.font("Sans-Bold").text("Клиент: ", marginL, y, { continued: true });
+      doc.font("Sans").text(estimate.clientName);
+      y = doc.y + 2;
     }
     if (estimate.clientPhone) {
-      doc.setFont("Roboto", "bold");
-      doc.text("Телефон: ", marginL, y);
-      const phW = doc.getTextWidth("Телефон: ");
-      doc.setFont("Roboto", "normal");
-      doc.text(estimate.clientPhone, marginL + phW, y);
-      y += 6;
+      doc.font("Sans-Bold").text("Телефон: ", marginL, y, { continued: true });
+      doc.font("Sans").text(estimate.clientPhone);
+      y = doc.y + 2;
     }
     if (estimate.clientAddress) {
-      doc.setFont("Roboto", "bold");
-      doc.text("Адрес: ", marginL, y);
-      const adW = doc.getTextWidth("Адрес: ");
-      doc.setFont("Roboto", "normal");
-      doc.text(estimate.clientAddress, marginL + adW, y);
-      y += 6;
+      doc.font("Sans-Bold").text("Адрес: ", marginL, y, { continued: true });
+      doc.font("Sans").text(estimate.clientAddress);
+      y = doc.y + 2;
     }
 
     // Separator
-    y += 2;
-    doc.setDrawColor(30, 58, 95);
-    doc.setLineWidth(0.5);
-    doc.line(marginL, y, pageW - marginR, y);
-    y += 6;
+    y = doc.y + 6;
+    doc.moveTo(marginL, y).lineTo(rightEdge, y).strokeColor("#1e3a5f").lineWidth(1).stroke();
+    y += 10;
 
-    // Rooms
+    // === ROOMS ===
+    const colX = [marginL, 310, 390, 470];
+    const colW = [260, 70, 70, rightEdge - 470];
+
     for (const rr of roomResults) {
-      // Check if we need a new page (at least 30mm for header + one row)
-      if (y > 260) {
+      // Page break check
+      if (y > 720) {
         doc.addPage();
-        y = 20;
+        y = 40;
       }
 
       // Room header
-      doc.setFont("Roboto", "bold");
-      doc.setFontSize(12);
-      doc.setTextColor(30, 58, 95);
-      doc.text(`${rr.roomName ?? "Комната"} — ${(rr.area ?? 0).toFixed(1)} м²`, marginL, y);
-      y += 2;
+      doc.font("Sans-Bold").fontSize(12).fillColor("#1e3a5f")
+        .text(`${rr.roomName ?? "Комната"} — ${(rr.area ?? 0).toFixed(1)} м²`, marginL, y);
+      y = doc.y + 4;
 
-      // Room items table
+      // Table header
+      doc.rect(marginL, y, rightEdge - marginL, 16).fill("#f3f4f6");
+      doc.font("Sans-Bold").fontSize(8).fillColor("#6b7280");
+      doc.text("Наименование", colX[0] + 4, y + 4, { width: colW[0] });
+      doc.text("Кол-во", colX[1], y + 4, { width: colW[1], align: "center" });
+      doc.text("Цена", colX[2], y + 4, { width: colW[2], align: "right" });
+      doc.text("Сумма", colX[3], y + 4, { width: colW[3], align: "right" });
+      y += 18;
+
+      // Table rows
       const items = rr.items ?? [];
-      if (items.length > 0) {
-        autoTable(doc, {
-          startY: y,
-          margin: { left: marginL, right: marginR },
-          head: [["Наименование", "Кол-во", "Цена", "Сумма"]],
-          body: items.map(item => [
-            String(item.itemName ?? ""),
-            `${item.quantity ?? 0} ${item.unit ?? ""}`,
-            fmtPrice(item.unitPrice),
-            fmtPrice(item.total),
-          ]),
-          styles: {
-            font: "Roboto",
-            fontSize: 9,
-            cellPadding: 2,
-          },
-          headStyles: {
-            font: "Roboto",
-            fontStyle: "bold",
-            fillColor: [243, 244, 246],
-            textColor: [107, 114, 128],
-            fontSize: 8,
-          },
-          columnStyles: {
-            0: { cellWidth: contentW * 0.45 },
-            1: { cellWidth: contentW * 0.15, halign: "center" },
-            2: { cellWidth: contentW * 0.18, halign: "right" },
-            3: { cellWidth: contentW * 0.22, halign: "right", fontStyle: "bold" },
-          },
-          theme: "plain",
-          didDrawPage: () => { /* autoTable handles page breaks */ },
-        });
+      for (const item of items) {
+        if (y > 750) {
+          doc.addPage();
+          y = 40;
+        }
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        y = (doc as any).lastAutoTable.finalY + 2;
+        doc.font("Sans").fontSize(9).fillColor("#1f2937");
+        doc.text(String(item.itemName ?? ""), colX[0] + 4, y, { width: colW[0] });
+        const textH = doc.y - y;
+        doc.text(`${item.quantity ?? 0} ${item.unit ?? ""}`, colX[1], y, { width: colW[1], align: "center" });
+        doc.text(fmtPrice(item.unitPrice), colX[2], y, { width: colW[2], align: "right" });
+        doc.font("Sans-Bold").text(fmtPrice(item.total), colX[3], y, { width: colW[3], align: "right" });
+
+        // Divider line
+        const rowH = Math.max(textH, 12);
+        y += rowH + 2;
+        doc.moveTo(marginL, y).lineTo(rightEdge, y).strokeColor("#eeeeee").lineWidth(0.5).stroke();
+        y += 3;
       }
 
       // Height multiplier note
       if (rr.heightMultiplied) {
-        doc.setFont("Roboto", "normal");
-        doc.setFontSize(8);
-        doc.setTextColor(217, 119, 6); // #d97706
-        doc.text("× 1.3 (высота > 3м)", marginL, y + 3);
-        y += 5;
+        doc.font("Sans").fontSize(8).fillColor("#d97706")
+          .text("× 1.3 (высота > 3м)", marginL, y);
+        y = doc.y + 2;
       }
 
       // Room subtotal
-      doc.setFont("Roboto", "bold");
-      doc.setFontSize(10);
-      doc.setTextColor(31, 41, 55);
-      const subtotalText = `Итого ${rr.roomName ?? "Комната"}: ${fmtPrice(rr.subtotalAfterHeight ?? 0)}`;
-      doc.text(subtotalText, pageW - marginR, y + 3, { align: "right" });
-      y += 10;
+      doc.font("Sans-Bold").fontSize(10).fillColor("#1f2937")
+        .text(`Итого ${rr.roomName ?? "Комната"}: ${fmtPrice(rr.subtotalAfterHeight ?? 0)}`, marginL, y, { align: "right" });
+      y = doc.y + 12;
     }
 
-    // Bottom separator
-    if (y > 260) { doc.addPage(); y = 20; }
-    doc.setDrawColor(30, 58, 95);
-    doc.setLineWidth(0.5);
-    doc.line(marginL, y, pageW - marginR, y);
-    y += 8;
+    // === BOTTOM SEPARATOR ===
+    if (y > 720) { doc.addPage(); y = 40; }
+    doc.moveTo(marginL, y).lineTo(rightEdge, y).strokeColor("#1e3a5f").lineWidth(1).stroke();
+    y += 10;
 
     // Min order note
     if (calc.minOrderApplied) {
-      doc.setFont("Roboto", "normal");
-      doc.setFontSize(8);
-      doc.setTextColor(107, 114, 128);
-      doc.text("* Применён минимальный заказ", pageW - marginR, y, { align: "right" });
-      y += 5;
+      doc.font("Sans").fontSize(8).fillColor("#6b7280")
+        .text("* Применён минимальный заказ", marginL, y, { align: "right" });
+      y = doc.y + 4;
     }
 
     // Grand total
-    doc.setFont("Roboto", "bold");
-    doc.setFontSize(16);
-    doc.setTextColor(30, 58, 95);
-    doc.text(`ИТОГО: ${fmtPrice(total)}`, pageW - marginR, y, { align: "right" });
-    y += 6;
+    doc.font("Sans-Bold").fontSize(16).fillColor("#1e3a5f")
+      .text(`ИТОГО: ${fmtPrice(total)}`, marginL, y, { align: "right" });
+    y = doc.y + 4;
 
-    // Price per m² info
+    // Price per m²
     if ((calc.totalArea ?? 0) > 0) {
-      doc.setFont("Roboto", "normal");
-      doc.setFontSize(9);
-      doc.setTextColor(107, 114, 128);
-      doc.text(
-        `${fmtPrice(Math.round(total / calc.totalArea))}/м²  |  ${calc.totalArea.toFixed(1)} м²`,
-        pageW - marginR, y, { align: "right" }
-      );
-      y += 6;
+      doc.font("Sans").fontSize(9).fillColor("#6b7280")
+        .text(
+          `${fmtPrice(Math.round(total / calc.totalArea))}/м²  |  ${calc.totalArea.toFixed(1)} м²`,
+          marginL, y, { align: "right" }
+        );
     }
 
     // Footer
-    doc.setFont("Roboto", "normal");
-    doc.setFontSize(7);
-    doc.setTextColor(156, 163, 175); // #9ca3af
-    const footerY = Math.max(y + 15, 275);
-    doc.text("* Расчёт предварительный. Точная стоимость определяется после замера.", pageW / 2, footerY, { align: "center" });
-    doc.text("Создано в PotolokAI", pageW / 2, footerY + 4, { align: "center" });
+    doc.font("Sans").fontSize(7).fillColor("#9ca3af")
+      .text("* Расчёт предварительный. Точная стоимость определяется после замера.", marginL, 790, { align: "center", width: rightEdge - marginL })
+      .text("Создано в PotolokAI", marginL, doc.y, { align: "center", width: rightEdge - marginL });
 
-    // Output
-    const pdfArrayBuffer = doc.output("arraybuffer");
+    doc.end();
+    const pdfBuffer = await promise;
+
     const filename = sanitizeFilename(`KP-${estimate.clientName || "estimate"}-${estimate.publicId.slice(0, 8)}`);
 
-    return new NextResponse(Buffer.from(pdfArrayBuffer), {
+    return new NextResponse(new Uint8Array(pdfBuffer), {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="${filename}.pdf"`,
