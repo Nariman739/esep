@@ -28,8 +28,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ru">
-      <body className={`${montserrat.variable} font-sans antialiased`}>
+    <html lang="ru" suppressHydrationWarning>
+      <body className={`${montserrat.variable} font-sans antialiased`} suppressHydrationWarning>
         {children}
         <Toaster position="top-right" richColors />
       </body>
