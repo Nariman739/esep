@@ -43,18 +43,18 @@ export default function MarketingLayout({
           </nav>
 
           <div className="flex items-center gap-3">
-            <Link
+            <a
               href="/auth/login"
               className="hidden md:inline-flex text-sm font-medium text-[#94A3B8] hover:text-[#F1F5F9] transition-colors"
             >
               Войти
-            </Link>
-            <Link
+            </a>
+            <a
               href="/auth/register"
               className="hidden sm:inline-flex items-center rounded-xl bg-gradient-to-r from-[#F97316] to-[#FB923C] px-5 py-2.5 text-sm font-semibold text-white hover:shadow-[0_0_30px_rgba(249,115,22,0.4)] hover:-translate-y-0.5 transition-all"
             >
               Начать бесплатно
-            </Link>
+            </a>
 
             {/* Mobile hamburger menu */}
             <Sheet open={open} onOpenChange={setOpen}>
@@ -100,20 +100,20 @@ export default function MarketingLayout({
                   </SheetClose>
                   <Separator className="bg-[#334155]/50 my-2" />
                   <SheetClose asChild>
-                    <Link
+                    <a
                       href="/auth/login"
                       className="text-[#94A3B8] hover:text-[#F1F5F9] transition-colors py-3 text-base"
                     >
                       Войти
-                    </Link>
+                    </a>
                   </SheetClose>
                   <SheetClose asChild>
-                    <Link
+                    <a
                       href="/auth/register"
                       className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-[#F97316] to-[#FB923C] px-5 py-3 text-sm font-semibold text-white mt-2"
                     >
                       Начать бесплатно
-                    </Link>
+                    </a>
                   </SheetClose>
                 </nav>
               </SheetContent>

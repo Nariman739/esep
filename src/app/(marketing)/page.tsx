@@ -1,4 +1,3 @@
-import Link from "next/link";
 import {
   Calculator,
   FileText,
@@ -47,18 +46,18 @@ export default function HomePage() {
               </p>
 
               <div className="flex flex-col sm:flex-row gap-3">
-                <Link
+                <a
                   href="/auth/register"
                   className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-[#F97316] to-[#FB923C] px-7 py-3.5 text-base font-semibold text-white hover:shadow-[0_0_40px_rgba(249,115,22,0.4)] hover:-translate-y-0.5 transition-all"
                 >
                   Попробовать бесплатно
-                </Link>
-                <Link
+                </a>
+                <a
                   href="#how"
                   className="inline-flex items-center justify-center rounded-xl border border-[#334155] px-7 py-3.5 text-base font-medium text-[#F1F5F9] hover:border-[#3B82F6] hover:text-[#3B82F6] transition-all"
                 >
                   Как это работает
-                </Link>
+                </a>
               </div>
             </div>
 
@@ -313,12 +312,12 @@ export default function HomePage() {
                   </li>
                 ))}
               </ul>
-              <Link
+              <a
                 href="/auth/register"
                 className="block w-full text-center rounded-xl border border-[#334155] py-3 text-sm font-medium text-[#F1F5F9] hover:border-[#3B82F6] transition-colors"
               >
                 Начать бесплатно
-              </Link>
+              </a>
             </div>
 
             {/* Pro — highlighted */}
@@ -347,12 +346,12 @@ export default function HomePage() {
                   </li>
                 ))}
               </ul>
-              <Link
+              <a
                 href="/auth/register"
                 className="block w-full text-center rounded-xl bg-gradient-to-r from-[#F97316] to-[#FB923C] py-3 text-sm font-semibold text-white hover:shadow-[0_0_30px_rgba(249,115,22,0.3)] transition-all"
               >
                 Попробовать бесплатно
-              </Link>
+              </a>
             </div>
           </div>
         </div>
@@ -425,13 +424,13 @@ export default function HomePage() {
             время на расчётах и производят впечатление на клиентов
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
+            <a
               href="/auth/register"
               className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-[#F97316] to-[#FB923C] px-10 py-4 text-lg font-semibold text-white hover:shadow-[0_0_50px_rgba(249,115,22,0.4)] hover:-translate-y-1 transition-all"
             >
               <Zap className="h-5 w-5 mr-2" />
               Начать бесплатно
-            </Link>
+            </a>
           </div>
           <p className="text-xs text-[#64748B] mt-4">
             Регистрация за 30 секунд. Без карты. 5 КП бесплатно каждый месяц.
