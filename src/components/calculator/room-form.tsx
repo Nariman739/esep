@@ -134,7 +134,7 @@ export function RoomForm({ onAdd, onCancel, priceMap, editRoom, customItems: cus
   const [spotType, setSpotType] = useState(er?.spotType ?? "spot_ours");
   // Corner type auto-determined by profile
   const [curtainType, setCurtainType] = useState(er?.curtainType ?? "curtain_ldsp");
-  const [includeTransformer, setIncludeTransformer] = useState(er?.includeTransformer ?? true);
+  const [includeTransformer, setIncludeTransformer] = useState(er?.includeTransformer ?? false);
 
   // Gardina + Podshtornik
   const [gardinaLength, setGardinaLength] = useState(
