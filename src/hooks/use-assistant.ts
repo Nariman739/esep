@@ -9,12 +9,14 @@ interface UseAssistantReturn {
   sessionId: string | null;
   isStreaming: boolean;
   isUploading: boolean;
+  isLoadingSession: boolean;
   extractedRooms: RoomInput[] | null;
   calculationResult: CalculationResult | null;
   clientData: ClientInfo | null;
   sendMessage: (text: string, imageUrl?: string) => Promise<void>;
   uploadPhoto: (file: File) => Promise<string | null>;
   startNewSession: () => void;
+  loadSession: (id: string) => Promise<void>;
 }
 
 export function useAssistant(): UseAssistantReturn {
@@ -22,6 +24,7 @@ export function useAssistant(): UseAssistantReturn {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isStreaming, setIsStreaming] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isLoadingSession, setIsLoadingSession] = useState(false);
   const [extractedRooms, setExtractedRooms] = useState<RoomInput[] | null>(null);
   const [calculationResult, setCalculationResult] = useState<CalculationResult | null>(null);
   const [clientData, setClientData] = useState<ClientInfo | null>(null);
@@ -219,16 +222,40 @@ export function useAssistant(): UseAssistantReturn {
     setIsUploading(false);
   }, []);
 
+  const loadSession = useCallback(async (id: string) => {
+    if (abortRef.current) abortRef.current.abort();
+    setIsLoadingSession(true);
+    setMessages([]);
+    setSessionId(null);
+    setExtractedRooms(null);
+    setCalculationResult(null);
+    setClientData(null);
+
+    try {
+      const res = await fetch(`/api/assistant/sessions/${id}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setSessionId(data.id);
+      setMessages((data.messages as ChatMessage[]) ?? []);
+      if (data.extractedRooms) setExtractedRooms(data.extractedRooms);
+      if (data.calculationData) setCalculationResult(data.calculationData);
+    } finally {
+      setIsLoadingSession(false);
+    }
+  }, []);
+
   return {
     messages,
     sessionId,
     isStreaming,
     isUploading,
+    isLoadingSession,
     extractedRooms,
     calculationResult,
     clientData,
     sendMessage,
     uploadPhoto,
     startNewSession,
+    loadSession,
   };
 }

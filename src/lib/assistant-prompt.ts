@@ -6,34 +6,62 @@ type PriceMap = Record<string, number>;
 // Агент 1: Vision Extractor
 // Задача: ТОЛЬКО читает документ, извлекает комнаты
 // ─────────────────────────────────────────────────────
-export const VISION_EXTRACTION_PROMPT = `Ты — точный считыватель документов для компании натяжных потолков.
+export const VISION_EXTRACTION_PROMPT = `Ты — высокоточный считыватель рукописных замеров для компании натяжных потолков.
 
-Задача: извлечь ВСЕ помещения с их размерами из фото тех.паспорта, плана или чертежа.
+Задача: извлечь ВСЕ помещения с размерами из фото замерного листа, эскиза или тех.паспорта.
 
 Верни ТОЛЬКО валидный JSON без каких-либо пояснений и текста:
 {
-  "documentType": "tech_passport | floor_plan | blueprint | other",
+  "documentType": "handwritten_sketch | tech_passport | floor_plan | blueprint | other",
   "rooms": [
     {
-      "name": "Помещение 1",
-      "area": 18.6,
-      "length": null,
-      "width": null
+      "name": "Зал",
+      "area": 20.8,
+      "length": 5.13,
+      "width": 4.30,
+      "perimeter": 13.8,
+      "spotsCount": 3,
+      "curtainRodLength": 4.0,
+      "notes": "Г-образная | тень | софиты 3шт | или null"
     }
   ],
-  "totalArea": 53.6,
+  "totalArea": null,
   "notes": "примечания или null"
 }
 
-Правила:
-- Извлеки ВСЕ помещения — каждую строку/ячейку с площадью из документа
-- НЕ УГАДЫВАЙ тип помещения! Называй просто "Помещение 1", "Помещение 2", "Помещение 3" и т.д. по порядку
-- Единственное исключение: если в самом документе ЯВНО написано название (например "кухня", "зал") — тогда используй его
-- area — площадь в м² если явно указана (число из документа)
-- length/width — точные размеры стен в метрах если на плане есть цифры у стен
-- Если площадь указана — ставь её. Если есть размеры — ставь их. Можно и то и другое
-- Если цифра нечёткая — ставь null, не угадывай
-- totalArea — сумма всех площадей если есть, иначе null
+## ЕДИНИЦЫ ИЗМЕРЕНИЯ — САМОЕ ВАЖНОЕ
+
+- Числа из 3-4 цифр (например 276, 3200, 448) — это САНТИМЕТРЫ → делить на 100 → 2.76м, 3.2м, 4.48м
+- Числа с точкой/запятой (3.2, 4,5) — уже МЕТРЫ, не трогать
+- Числа вида "S=20.8" или "P=13.8" — уже в м² и м.п., не трогать
+
+## ПРИОРИТЕТ ДАННЫХ
+
+Если мастер сам написал S= (площадь) или P= (периметр) рядом с комнатой — используй ЭТИ значения как area и perimeter. Они точнее чем твои расчёты.
+
+## НАЗВАНИЯ КОМНАТ
+
+Ищи подписи над или рядом с эскизом: Зал, Прих, Прихожая, Комната, Спальня, Кухня, С/у, Санузел, Туалет, Балкон, Лоджия, Кладовка, Коридор.
+Если названия нет — "Помещение 1", "Помещение 2" по порядку.
+
+## РАЗМЕРЫ
+
+- length = длинная стена в метрах, width = короткая стена в метрах
+- Для Г-образных комнат: length и width = габаритные размеры (максимальная длина и ширина), в notes пиши "Г-образная"
+- Если комната прямоугольная и есть оба размера — заполняй length и width
+- Если площадь уже написана мастером (S=) — не вычисляй сам, бери из документа
+
+## СПОТЫ И ДОП. ОБОРУДОВАНИЕ
+
+- Кружочки (○) нарисованные внутри комнаты = споты, посчитай их → spotsCount
+- Если написано "Трек Xм" или "X м" рядом с комнатой → curtainRodLength = X (в метрах)
+- Если написано "тень" — добавь в notes
+- Если написано "софиты Xшт" — добавь в notes
+
+## ОБЩИЕ ПРАВИЛА
+
+- Извлеки ВСЕ помещения без исключения (балконы, санузлы, кладовки — тоже)
+- Если цифра нечёткая или не уверен — ставь null, НЕ угадывай
 - Порядок: от большей площади к меньшей`;
 
 // ─────────────────────────────────────────────────────
@@ -48,6 +76,10 @@ export function computeRoomSummary(visionDataJson: string): string {
         area?: number | null;
         length?: number | null;
         width?: number | null;
+        perimeter?: number | null;
+        spotsCount?: number | null;
+        curtainRodLength?: number | null;
+        notes?: string | null;
       }>;
       totalArea?: number | null;
     };
@@ -60,24 +92,34 @@ export function computeRoomSummary(visionDataJson: string): string {
     let allExact = true;
 
     for (const room of rooms) {
+      const hasLW = !!(room.length && room.width);
+
+      // Area: prefer document value, fallback to L×W calculation
       const area =
         room.area != null
           ? room.area
-          : room.length && room.width
-          ? Math.round(room.length * room.width * 10) / 10
+          : hasLW
+          ? Math.round(room.length! * room.width! * 100) / 100
           : null;
 
-      const hasExact = !!(room.length && room.width);
-      if (!hasExact) allExact = false;
+      if (!hasLW && room.area == null) allExact = false;
 
+      // Perimeter priority: 1) exact L+W from doc, 2) explicit perimeter field, 3) estimate from area
       let perimeter: number | null = null;
-      if (room.length && room.width) {
-        perimeter = 2 * (room.length + room.width);
+      let perimExact = false;
+
+      if (hasLW) {
+        perimeter = Math.round(2 * (room.length! + room.width!) * 10) / 10;
+        perimExact = true;
+      } else if (room.perimeter != null) {
+        perimeter = room.perimeter;
+        perimExact = true;
       } else if (area) {
         // estimate via 1.3:1 room proportion
         const l = Math.sqrt(area * 1.3);
         const w = Math.sqrt(area / 1.3);
-        perimeter = 2 * (l + w);
+        perimeter = Math.round(2 * (l + w) * 10) / 10;
+        perimExact = false;
       }
 
       if (area) calcTotal += area;
@@ -85,10 +127,14 @@ export function computeRoomSummary(visionDataJson: string): string {
       const areaStr = area != null ? `${area} м²` : "площадь неизвестна";
       const perimStr =
         perimeter != null
-          ? `, периметр ${hasExact ? "" : "~"}${perimeter.toFixed(1)} м.п.`
+          ? `, периметр ${perimExact ? "" : "~"}${perimeter.toFixed(1)} м.п.`
           : "";
+      const dimsStr = hasLW ? ` (${room.length}×${room.width}м)` : "";
+      const spotsStr = room.spotsCount ? `, ${room.spotsCount} спот.` : "";
+      const trackStr = room.curtainRodLength ? `, трек ${room.curtainRodLength}м` : "";
+      const notesStr = room.notes ? ` [${room.notes}]` : "";
 
-      lines.push(`• ${room.name} — ${areaStr}${perimStr}`);
+      lines.push(`• ${room.name} — ${areaStr}${dimsStr}${perimStr}${spotsStr}${trackStr}${notesStr}`);
     }
 
     const totalArea = data.totalArea ?? calcTotal;
@@ -269,5 +315,21 @@ ${canvasTypes}
 ---
 
 ## Если мастер ничего не написал
-"Отправьте фото тех.паспорта или напишите размеры комнат"`;
+"Отправьте фото тех.паспорта или напишите размеры комнат"
+
+---
+
+## НАВИГАЦИЯ ПО СЕРВИСУ
+
+Если мастер спрашивает "где найти", "как сделать", "куда нажать" — отвечай конкретно:
+
+- **Калькулятор** (ввод вручную) → меню слева "Калькулятор"
+- **Мои расчёты / история КП** → меню слева "Расчёты"
+- **Настройка своих цен** → меню слева "Мои цены"
+- **Профиль / реквизиты / лого / Telegram** → меню слева "Профиль"
+- **Отправить КП клиенту** → открой расчёт → кнопка "Отправить" → скопируй ссылку → WhatsApp
+- **Скачать PDF** → открой расчёт → кнопка "PDF"
+- **Создать договор** → открой расчёт → кнопка "Договор"
+- **Подключить Telegram уведомления** → Профиль → раздел Telegram → "@potolokaiBot"
+- **Добавить кастомную позицию** → Мои цены → "Добавить позицию"`;
 }
