@@ -23,16 +23,16 @@ async function extractRoomsFromPhoto(imageUrl: string): Promise<string | null> {
         },
       ],
       stream: false,
-      max_tokens: 1000,
+      max_tokens: 2000,
     });
     const raw = result.choices[0]?.message?.content?.trim() || null;
     if (!raw) return null;
 
-    // Strip markdown code fences — Claude sometimes wraps JSON in ```json...```
-    const cleaned = raw
-      .replace(/^```(?:json)?\s*/i, "")
-      .replace(/\s*```\s*$/, "")
-      .trim();
+    // Extract JSON from ```json...``` block (chain-of-thought response)
+    const jsonBlockMatch = raw.match(/```json\s*([\s\S]*?)```/i);
+    const cleaned = jsonBlockMatch
+      ? jsonBlockMatch[1].trim()
+      : raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
 
     // Validate it's parseable JSON before returning
     JSON.parse(cleaned);
