@@ -144,11 +144,14 @@ export async function POST(request: Request) {
     const voiceFileId = message.voice?.file_id || message.audio?.file_id || null;
 
     // ── Process message (text / photo / voice) ──
+    // MUST await — Vercel kills serverless function after return
     const textContent = text || message.caption || null;
 
-    handleTelegramBotMessage(chatId, textContent, photoFileId, voiceFileId).catch(
-      (err) => console.error("Telegram bot processing error:", err)
-    );
+    try {
+      await handleTelegramBotMessage(chatId, textContent, photoFileId, voiceFileId);
+    } catch (err) {
+      console.error("Telegram bot processing error:", err);
+    }
 
     return NextResponse.json({ ok: true });
   } catch (error) {
