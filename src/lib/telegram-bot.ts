@@ -2,10 +2,9 @@
 // Handles: text messages, photos (vision), voice messages (STT)
 
 import { prisma } from "@/lib/prisma";
-import { getOpenRouter, AI_MODEL } from "@/lib/openrouter";
+import { getOpenRouter, AI_MODEL, VISION_MODEL } from "@/lib/openrouter";
 import {
   buildSystemPrompt,
-  VISION_EXTRACTION_PROMPT,
   computeRoomSummary,
 } from "@/lib/assistant-prompt";
 import { calculate } from "@/lib/calculate";
@@ -308,27 +307,137 @@ async function processAIChat(
 }
 
 // ─────────────────────────────────────────────────────
-// Vision Extractor (same as web)
+// Vision Extractor — два прохода через Opus
+// Проход 1: читает ВСЕ числа и фигуры с фото
+// Проход 2: строит JSON комнат из прочитанных данных
 // ─────────────────────────────────────────────────────
+
+const PASS1_READ_NUMBERS = `Ты — высокоточный считыватель рукописных чертежей замеров помещений.
+
+Задача: прочитай АБСОЛЮТНО ВСЕ с фото. Ничего не пропусти.
+
+## ШАГ 1 — ВСЕ ЧИСЛА
+Выпиши КАЖДОЕ число видимое на фото, с позицией:
+"Числа: 410 (верх-центр), 447 (верх-право), 234 (лево), ..."
+Включая маленькие 1-2 значные числа (9, 22, 45, 66, 93 и т.д.)!
+
+## ШАГ 2 — СПЕЦИАЛЬНЫЕ ОБОЗНАЧЕНИЯ
+Найди P=... (периметр) и S=... (площадь) — они написаны мастером и ТОЧНЫ.
+Текстовые надписи (названия комнат, "холл", "кухня", "сп." и т.д.)
+
+## ШАГ 3 — ВСЕ ЗАМКНУТЫЕ ФИГУРЫ
+Опиши КАЖДУЮ замкнутую фигуру на чертеже:
+- Позиция (верх-лево, центр, низ-право...)
+- Форма (прямоугольник / Г-образная / П-образная / сложная)
+- Какие числа расположены вдоль КАЖДОЙ стороны этой фигуры
+- Если есть P= или S= рядом — укажи
+
+⚠️ ОБЯЗАТЕЛЬНО:
+- Считай ВСЕ фигуры, даже маленькие (кладовки, санузлы)
+- Число между двумя фигурами может относиться к обеим — укажи у обеих
+- Не пропускай фигуры внизу, по краям, в углах
+- Числа 3-4 цифры (139, 293, 410) = САНТИМЕТРЫ
+- Числа с точкой/запятой (8.13, 10.64) рядом с P= = уже МЕТРЫ`;
+
+const PASS2_BUILD_ROOMS = `Ты — калькулятор помещений. Из описания чертежа строишь точный JSON.
+
+## ПРАВИЛА РАСЧЁТА
+
+### Единицы
+- Числа 3-4 цифры (293, 410, 447) → САНТИМЕТРЫ → делить на 100
+- Числа 1-2 цифры (9, 22, 45, 66) рядом со стеной → тоже САНТИМЕТРЫ → делить на 100
+- P=8.13 → периметр 8.13 метров (уже метры!)
+- S=12.5 → площадь 12.5 м² (уже метры!)
+
+### Площадь
+- Прямоугольник: длина × ширина
+- Г-образная: раздели на 2 прямоугольника и СЛОЖИ (никогда не вычитай!)
+- Если мастер написал S= → используй это значение, оно точнее!
+
+### Периметр
+- Сложи длины ВСЕХ стен по контуру
+- Если мастер написал P= → используй это значение, оно точнее!
+
+### Проверка
+- area ДОЛЖНА быть < max_длина × max_ширина (для непрямоугольных)
+- Периметр всегда > 2×(длина + ширина) для Г/П-образных
+
+## ВЫХОДНОЙ ФОРМАТ
+
+Выведи ТОЛЬКО валидный JSON без пояснений:
+{
+  "documentType": "handwritten_sketch",
+  "rooms": [
+    {
+      "name": "Помещение 1",
+      "area": 12.12,
+      "length": 3.69,
+      "width": 2.94,
+      "perimeter": 13.26,
+      "spotsCount": 0,
+      "curtainRodLength": 0,
+      "notes": "Г-образная",
+      "rectangles": [
+        {"width": 2.94, "height": 3.69, "area": 10.85},
+        {"width": 1.30, "height": 0.98, "area": 1.27}
+      ]
+    }
+  ],
+  "totalArea": null,
+  "notes": null
+}
+
+## ПРАВИЛА
+- КАЖДАЯ замкнутая фигура = ОТДЕЛЬНАЯ комната (не объединяй!)
+- length = максимальная длина, width = максимальная ширина
+- Названия: если на чертеже написано — используй, иначе "Помещение 1", "Помещение 2"...
+- Кружочки внутри комнаты = споты → spotsCount
+- "rectangles" обязательно для Г/П/Т-образных
+- Порядок: от большей площади к меньшей
+- Нечёткие цифры → null`;
+
 async function extractRoomsFromPhoto(imageUrl: string): Promise<string | null> {
   try {
-    const result = await getOpenRouter().chat.completions.create({
-      model: AI_MODEL,
+    // ПРОХОД 1: Opus читает ВСЕ числа и фигуры с фото
+    const pass1 = await getOpenRouter().chat.completions.create({
+      model: VISION_MODEL,
       messages: [
-        { role: "system", content: VISION_EXTRACTION_PROMPT },
+        { role: "system", content: PASS1_READ_NUMBERS },
         {
           role: "user",
           content: [
-            { type: "text", text: "Извлеки все помещения из этого документа" },
+            { type: "text", text: "Прочитай все числа и опиши все фигуры на этом чертеже замеров" },
             { type: "image_url", image_url: { url: imageUrl } },
           ],
         },
       ],
       stream: false,
-      max_tokens: 4000,
+      max_tokens: 3000,
     });
-    const raw = result.choices[0]?.message?.content?.trim() || null;
+
+    const numbersDescription = pass1.choices[0]?.message?.content?.trim();
+    if (!numbersDescription) return null;
+
+    console.log("Vision pass 1 (numbers):", numbersDescription.slice(0, 500));
+
+    // ПРОХОД 2: строим JSON из прочитанных данных
+    const pass2 = await getOpenRouter().chat.completions.create({
+      model: VISION_MODEL,
+      messages: [
+        { role: "system", content: PASS2_BUILD_ROOMS },
+        {
+          role: "user",
+          content: `Вот описание чертежа замеров помещений:\n\n${numbersDescription}\n\nПострой JSON со всеми комнатами.`,
+        },
+      ],
+      stream: false,
+      max_tokens: 3000,
+    });
+
+    const raw = pass2.choices[0]?.message?.content?.trim() || null;
     if (!raw) return null;
+
+    console.log("Vision pass 2 (JSON):", raw.slice(0, 500));
 
     const jsonStart = raw.indexOf("{");
     const jsonEnd = raw.lastIndexOf("}");
