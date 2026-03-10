@@ -325,7 +325,7 @@ async function extractRoomsFromPhoto(imageUrl: string): Promise<string | null> {
         },
       ],
       stream: false,
-      max_tokens: 2000,
+      max_tokens: 4000,
     });
     const raw = result.choices[0]?.message?.content?.trim() || null;
     if (!raw) return null;
