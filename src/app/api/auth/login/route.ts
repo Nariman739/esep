@@ -18,7 +18,8 @@ export async function POST(req: NextRequest) {
 
     await createSession(user.id);
     return NextResponse.json({ ok: true });
-  } catch {
+  } catch (e) {
+    console.error("LOGIN ERROR:", e);
     return NextResponse.json({ error: "Ошибка сервера" }, { status: 500 });
   }
 }
