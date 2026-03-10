@@ -1,5 +1,5 @@
 import { Document, Page, Text, View, StyleSheet, Font } from "@react-pdf/renderer";
-import { amountInWords, formatMoney, formatDate } from "@/lib/utils";
+import { amountInWords, formatMoney, formatDateFull } from "@/lib/utils";
 
 Font.register({
   family: "Roboto",
@@ -10,35 +10,56 @@ Font.register({
 });
 
 const s = StyleSheet.create({
-  page: { fontFamily: "Roboto", fontSize: 9, padding: 30, color: "#111" },
-  title: { fontSize: 13, fontWeight: 700, textAlign: "center", marginBottom: 4 },
-  subtitle: { fontSize: 9, textAlign: "center", color: "#555", marginBottom: 16 },
-  row: { flexDirection: "row", marginBottom: 3 },
-  label: { width: 130, color: "#555" },
-  value: { flex: 1, fontWeight: 700 },
-  table: { marginTop: 16, borderWidth: 1, borderColor: "#ddd" },
-  tableHeader: { flexDirection: "row", backgroundColor: "#f5f5f5", borderBottomWidth: 1, borderColor: "#ddd" },
-  tableRow: { flexDirection: "row", borderBottomWidth: 1, borderColor: "#eee" },
-  cell: { padding: "5 4", borderRightWidth: 1, borderColor: "#eee" },
-  th: { padding: "5 4", borderRightWidth: 1, borderColor: "#ddd", fontWeight: 700 },
-  colN: { width: 24 },
-  colService: { flex: 1 },
-  colUnit: { width: 50 },
-  colQty: { width: 40 },
-  colPrice: { width: 70 },
-  colTotal: { width: 80, borderRightWidth: 0 },
-  totalRow: { flexDirection: "row", justifyContent: "flex-end", marginTop: 6 },
-  totalLabel: { width: 150, fontWeight: 700 },
-  totalValue: { width: 80, fontWeight: 700, textAlign: "right" },
-  words: { marginTop: 8, fontSize: 9, color: "#333" },
-  section: { marginTop: 20 },
-  sectionTitle: { fontWeight: 700, marginBottom: 6, fontSize: 10 },
-  divider: { height: 1, backgroundColor: "#ddd", marginVertical: 12 },
-  signRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 24 },
-  signBlock: { width: "45%" },
-  signLabel: { color: "#555", marginBottom: 20 },
-  signLine: { borderBottomWidth: 1, borderColor: "#999", marginBottom: 3 },
-  signName: { color: "#555", fontSize: 8 },
+  page: { fontFamily: "Roboto", fontSize: 9, padding: 28, color: "#000" },
+
+  // Верхняя таблица реквизитов
+  bankTable: { borderWidth: 1, borderColor: "#000", marginBottom: 8 },
+  bankRow: { flexDirection: "row", borderBottomWidth: 1, borderColor: "#000" },
+  bankRowLast: { flexDirection: "row" },
+  bankCell: { padding: "3 4", borderRightWidth: 1, borderColor: "#000" },
+  bankCellLast: { padding: "3 4" },
+  bankLabel: { fontSize: 8, color: "#555" },
+  bankValue: { fontWeight: 700, fontSize: 9 },
+
+  // Заголовок
+  title: { fontSize: 12, fontWeight: 700, marginBottom: 6, marginTop: 6 },
+
+  // Инфо строки
+  infoRow: { flexDirection: "row", marginBottom: 3 },
+  infoLabel: { width: 70, fontWeight: 700 },
+  infoValue: { flex: 1 },
+
+  // Таблица услуг
+  table: { marginTop: 8, borderWidth: 1, borderColor: "#000" },
+  tableHeader: { flexDirection: "row", borderBottomWidth: 1, borderColor: "#000", backgroundColor: "#fff" },
+  tableRow: { flexDirection: "row", borderBottomWidth: 1, borderColor: "#000" },
+  tableRowLast: { flexDirection: "row" },
+  th: { padding: "4 3", borderRightWidth: 1, borderColor: "#000", fontWeight: 700, textAlign: "center" },
+  td: { padding: "4 3", borderRightWidth: 1, borderColor: "#000" },
+  tdLast: { padding: "4 3" },
+
+  colN: { width: 22 },
+  colCode: { width: 45 },
+  colName: { flex: 1 },
+  colQty: { width: 38, textAlign: "center" },
+  colUnit: { width: 40, textAlign: "center" },
+  colPrice: { width: 68, textAlign: "right" },
+  colSum: { width: 80, textAlign: "right" },
+
+  // Итоги
+  totalSection: { marginTop: 0 },
+  totalRow: { flexDirection: "row", justifyContent: "flex-end", borderBottomWidth: 1, borderColor: "#000", borderLeftWidth: 1, borderRightWidth: 1 },
+  totalLabel: { flex: 1, padding: "3 4", borderRightWidth: 1, borderColor: "#000", textAlign: "right" },
+  totalValue: { width: 80, padding: "3 4", textAlign: "right" },
+  totalLabelBold: { flex: 1, padding: "3 4", borderRightWidth: 1, borderColor: "#000", textAlign: "right", fontWeight: 700 },
+  totalValueBold: { width: 80, padding: "3 4", textAlign: "right", fontWeight: 700 },
+
+  // Подписи
+  signRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 20 },
+  signBlock: { flexDirection: "row", alignItems: "flex-end", gap: 6 },
+  signLabel: { fontWeight: 700 },
+  signLine: { flex: 1, borderBottomWidth: 1, borderColor: "#000", width: 200, marginHorizontal: 8 },
+  stamp: { fontWeight: 700 },
 });
 
 interface Party {
@@ -71,96 +92,121 @@ interface InvoiceData {
 export function InvoicePDF({ data }: { data: InvoiceData }) {
   const { number, date, seller, buyer, serviceName, unit, quantity, price, total } = data;
 
+  const sellerLine = `БИН / ИИН ${seller.iin}, ${seller.name}${seller.address ? `, ${seller.address}` : ""}`;
+  const buyerLine = `БИН / ИИН ${buyer.bin}, ${buyer.name}${buyer.address ? `, ${buyer.address}` : ""}`;
+
   return (
     <Document>
       <Page size="A4" style={s.page}>
-        <Text style={s.title}>СЧЕТ НА ОПЛАТУ № {number}</Text>
-        <Text style={s.subtitle}>от {formatDate(new Date(date))}</Text>
 
+        {/* Верхняя таблица реквизитов бенефициара */}
+        <View style={s.bankTable}>
+          <View style={s.bankRow}>
+            <View style={[s.bankCell, { flex: 2 }]}>
+              <Text style={s.bankLabel}>Бенефициар:</Text>
+              <Text style={s.bankValue}>{seller.name}</Text>
+              <Text>БИН: {seller.iin}</Text>
+            </View>
+            <View style={[s.bankCell, { flex: 1 }]}>
+              <Text style={s.bankLabel}>ИИК</Text>
+              <Text style={s.bankValue}>{seller.iban}</Text>
+            </View>
+            <View style={[s.bankCellLast, { width: 60 }]}>
+              <Text style={s.bankLabel}>КБе</Text>
+              <Text style={s.bankValue}>{seller.kbe}</Text>
+            </View>
+          </View>
+          <View style={s.bankRowLast}>
+            <View style={[s.bankCell, { flex: 2 }]}>
+              <Text style={s.bankLabel}>Банк бенефициара:</Text>
+              <Text style={s.bankValue}>{seller.bankName}</Text>
+            </View>
+            <View style={[s.bankCell, { flex: 1 }]}>
+              <Text style={s.bankLabel}>БИК</Text>
+              <Text style={s.bankValue}>{seller.bik}</Text>
+            </View>
+            <View style={[s.bankCellLast, { width: 60 }]}>
+              <Text style={s.bankLabel}>Код назначения платежа</Text>
+              <Text style={s.bankValue}>859</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Заголовок */}
+        <Text style={s.title}>
+          Счет на оплату №{number}{"  "}от {formatDateFull(new Date(date))}
+        </Text>
+
+        {/* Поставщик / Покупатель */}
+        <View style={s.infoRow}>
+          <Text style={s.infoLabel}>Поставщик:</Text>
+          <Text style={s.infoValue}>{sellerLine}</Text>
+        </View>
+        <View style={s.infoRow}>
+          <Text style={s.infoLabel}>Покупатель:</Text>
+          <Text style={s.infoValue}>{buyerLine}</Text>
+        </View>
         {data.contractNumber && (
-          <Text style={s.subtitle}>
-            к договору № {data.contractNumber}
-            {data.contractDate ? ` от ${formatDate(new Date(data.contractDate))}` : ""}
-          </Text>
+          <View style={s.infoRow}>
+            <Text style={s.infoLabel}>Договор:</Text>
+            <Text style={s.infoValue}>
+              {data.contractNumber}
+              {data.contractDate ? ` от ${formatDateFull(new Date(data.contractDate))}` : ""}
+            </Text>
+          </View>
         )}
 
-        <View style={s.divider} />
-
-        {/* Продавец */}
-        <View style={s.section}>
-          <Text style={s.sectionTitle}>ПОСТАВЩИК (ИСПОЛНИТЕЛЬ)</Text>
-          <View style={s.row}><Text style={s.label}>Наименование:</Text><Text style={s.value}>{seller.name}</Text></View>
-          <View style={s.row}><Text style={s.label}>ИИН:</Text><Text style={s.value}>{seller.iin}</Text></View>
-          {seller.address ? <View style={s.row}><Text style={s.label}>Адрес:</Text><Text style={s.value}>{seller.address}</Text></View> : null}
-          <View style={s.row}><Text style={s.label}>Банк:</Text><Text style={s.value}>{seller.bankName}</Text></View>
-          <View style={s.row}><Text style={s.label}>ИИК:</Text><Text style={s.value}>{seller.iban}</Text></View>
-          <View style={s.row}><Text style={s.label}>БИК:</Text><Text style={s.value}>{seller.bik}</Text></View>
-          <View style={s.row}><Text style={s.label}>КБе:</Text><Text style={s.value}>{seller.kbe}</Text></View>
-          {seller.phone ? <View style={s.row}><Text style={s.label}>Телефон:</Text><Text style={s.value}>{seller.phone}</Text></View> : null}
-        </View>
-
-        <View style={s.divider} />
-
-        {/* Покупатель */}
-        <View style={s.section}>
-          <Text style={s.sectionTitle}>ПОКУПАТЕЛЬ (ЗАКАЗЧИК)</Text>
-          <View style={s.row}><Text style={s.label}>Наименование:</Text><Text style={s.value}>{buyer.name}</Text></View>
-          <View style={s.row}><Text style={s.label}>БИН:</Text><Text style={s.value}>{buyer.bin}</Text></View>
-          {buyer.address ? <View style={s.row}><Text style={s.label}>Адрес:</Text><Text style={s.value}>{buyer.address}</Text></View> : null}
-          {buyer.bankName ? <View style={s.row}><Text style={s.label}>Банк:</Text><Text style={s.value}>{buyer.bankName}</Text></View> : null}
-          {buyer.iban ? <View style={s.row}><Text style={s.label}>ИИК:</Text><Text style={s.value}>{buyer.iban}</Text></View> : null}
-          {buyer.bik ? <View style={s.row}><Text style={s.label}>БИК:</Text><Text style={s.value}>{buyer.bik}</Text></View> : null}
-          {buyer.kbe ? <View style={s.row}><Text style={s.label}>КБе:</Text><Text style={s.value}>{buyer.kbe}</Text></View> : null}
-          {buyer.directorName ? <View style={s.row}><Text style={s.label}>Руководитель:</Text><Text style={s.value}>{buyer.directorName}</Text></View> : null}
-        </View>
-
-        <View style={s.divider} />
-
-        {/* Таблица */}
+        {/* Таблица услуг */}
         <View style={s.table}>
           <View style={s.tableHeader}>
             <Text style={[s.th, s.colN]}>№</Text>
-            <Text style={[s.th, s.colService]}>Наименование</Text>
+            <Text style={[s.th, s.colCode]}>Код</Text>
+            <Text style={[s.th, s.colName]}>Наименование</Text>
+            <Text style={[s.th, s.colQty]}>Кол-во</Text>
             <Text style={[s.th, s.colUnit]}>Ед.</Text>
-            <Text style={[s.th, s.colQty]}>Кол.</Text>
             <Text style={[s.th, s.colPrice]}>Цена</Text>
-            <Text style={[s.th, s.colTotal]}>Сумма</Text>
+            <Text style={[{ ...s.th, borderRightWidth: 0 }, s.colSum]}>Сумма</Text>
           </View>
-          <View style={s.tableRow}>
-            <Text style={[s.cell, s.colN]}>1</Text>
-            <Text style={[s.cell, s.colService]}>{serviceName}</Text>
-            <Text style={[s.cell, s.colUnit]}>{unit}</Text>
-            <Text style={[s.cell, s.colQty]}>{quantity}</Text>
-            <Text style={[s.cell, s.colPrice]}>{formatMoney(price)}</Text>
-            <Text style={[s.cell, s.colTotal, { borderRightWidth: 0 }]}>{formatMoney(total)}</Text>
+          <View style={s.tableRowLast}>
+            <Text style={[s.td, s.colN, { textAlign: "center" }]}>1</Text>
+            <Text style={[s.td, s.colCode]}></Text>
+            <Text style={[s.td, s.colName]}>{serviceName}</Text>
+            <Text style={[s.td, s.colQty, { textAlign: "center" }]}>{quantity}</Text>
+            <Text style={[s.td, s.colUnit, { textAlign: "center" }]}>{unit}</Text>
+            <Text style={[s.td, s.colPrice, { textAlign: "right" }]}>{formatMoney(price)}</Text>
+            <Text style={[s.tdLast, s.colSum, { textAlign: "right" }]}>{formatMoney(total)}</Text>
           </View>
         </View>
 
-        <View style={s.totalRow}>
-          <Text style={s.totalLabel}>Итого без НДС:</Text>
-          <Text style={s.totalValue}>{formatMoney(total)} тг</Text>
-        </View>
-        <View style={s.totalRow}>
-          <Text style={s.totalLabel}>НДС:</Text>
-          <Text style={s.totalValue}>Без НДС</Text>
-        </View>
-        <View style={s.totalRow}>
-          <Text style={[s.totalLabel, { fontSize: 10 }]}>ИТОГО К ОПЛАТЕ:</Text>
-          <Text style={[s.totalValue, { fontSize: 10 }]}>{formatMoney(total)} тг</Text>
+        {/* Итоги */}
+        <View style={s.totalSection}>
+          <View style={s.totalRow}>
+            <Text style={s.totalLabel}>Итого:</Text>
+            <Text style={s.totalValue}>{formatMoney(total)}</Text>
+          </View>
+          <View style={s.totalRow}>
+            <Text style={s.totalLabel}>В том числе НДС:</Text>
+            <Text style={s.totalValue}>0</Text>
+          </View>
         </View>
 
-        <Text style={s.words}>Сумма прописью: {amountInWords(total)}</Text>
+        {/* Прописью */}
+        <Text style={{ marginTop: 6, fontSize: 9 }}>
+          Всего наименований 1, на сумму {formatMoney(total)} KZT
+        </Text>
+        <Text style={{ fontWeight: 700, fontSize: 9, marginTop: 2 }}>
+          Всего к оплате: {amountInWords(total)}
+        </Text>
 
+        {/* Подписи */}
         <View style={s.signRow}>
-          <View style={s.signBlock}>
-            <Text style={s.signLabel}>Исполнитель:</Text>
-            <View style={s.signLine} />
-            <Text style={s.signName}>{seller.directorName || seller.name}</Text>
+          <View style={{ flexDirection: "row", alignItems: "flex-end" }}>
+            <Text style={s.signLabel}>Исполнитель</Text>
+            <View style={{ width: 200, borderBottomWidth: 1, borderColor: "#000", marginHorizontal: 8, marginBottom: 2 }} />
           </View>
-          <View style={s.signBlock}>
-            <Text style={[s.signLabel, { textAlign: "right" }]}>М.П.</Text>
-          </View>
+          <Text style={s.stamp}>М.П.</Text>
         </View>
+
       </Page>
     </Document>
   );

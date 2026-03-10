@@ -78,3 +78,11 @@ export function formatDate(date: Date): string {
     year: "numeric",
   }).format(date);
 }
+
+export function formatDateFull(date: Date): string {
+  return new Intl.DateTimeFormat("ru-RU", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(date);
+}
