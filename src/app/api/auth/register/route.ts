@@ -1,74 +1,28 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { hashPassword, createSession } from "@/lib/auth";
-import { PRODUCT_ITEMS } from "@/lib/constants";
-import { normalizePhone } from "@/lib/phone";
 
-export async function POST(request: Request) {
+export async function POST(req: NextRequest) {
   try {
-    const body = await request.json();
-    const { phone: rawPhone, password, firstName, companyName } = body;
+    const { email, password, name } = await req.json();
 
-    if (!rawPhone || !password || !firstName) {
-      return NextResponse.json(
-        { error: "Телефон, пароль и имя обязательны" },
-        { status: 400 }
-      );
+    if (!email || !password || !name) {
+      return NextResponse.json({ error: "Заполните все поля" }, { status: 400 });
     }
 
-    const phone = normalizePhone(rawPhone);
-    if (!phone) {
-      return NextResponse.json(
-        { error: "Неверный формат телефона. Пример: +7 700 123 4567" },
-        { status: 400 }
-      );
-    }
-
-    if (password.length < 6) {
-      return NextResponse.json(
-        { error: "Пароль минимум 6 символов" },
-        { status: 400 }
-      );
-    }
-
-    const existing = await prisma.master.findUnique({ where: { phone } });
+    const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
-      return NextResponse.json(
-        { error: "Этот номер уже зарегистрирован" },
-        { status: 409 }
-      );
+      return NextResponse.json({ error: "Этот email уже зарегистрирован" }, { status: 400 });
     }
 
     const passwordHash = await hashPassword(password);
-
-    const master = await prisma.master.create({
-      data: {
-        phone,
-        passwordHash,
-        firstName,
-        companyName: companyName || null,
-        prices: {
-          create: PRODUCT_ITEMS.map((item) => ({
-            itemCode: item.code,
-            price: item.defaultPrice,
-          })),
-        },
-      },
+    const user = await prisma.user.create({
+      data: { email, passwordHash, fullName: name },
     });
 
-    await createSession(master.id);
-
-    return NextResponse.json({
-      id: master.id,
-      phone: master.phone,
-      firstName: master.firstName,
-      companyName: master.companyName,
-    });
-  } catch (error) {
-    console.error("Register error:", error);
-    return NextResponse.json(
-      { error: "Ошибка регистрации" },
-      { status: 500 }
-    );
+    await createSession(user.id);
+    return NextResponse.json({ ok: true });
+  } catch {
+    return NextResponse.json({ error: "Ошибка сервера" }, { status: 500 });
   }
 }

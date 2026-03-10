@@ -7,192 +7,95 @@ datasource db {
   provider = "postgresql"
 }
 
-// ============================================
-// AUTH
-// ============================================
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
 
-model Master {
-  id              String   @id @default(uuid())
-  phone           String   @unique
-  email           String?  @unique
-  passwordHash    String
+  // ИП реквизиты
+  fullName     String?
+  iin          String?
+  bankName     String?
+  iban         String?
+  bik          String?
+  kbe          String?
+  address      String?
+  directorName String?
+  phone        String?
 
-  // Profile
-  firstName       String
-  lastName        String?
-  companyName     String?
-
-  // Branding (for KP PDFs)
-  logoUrl         String?
-  brandColor      String   @default("#1e3a5f")
-  instagramUrl    String?
-  whatsappPhone   String?
-  address         String?
-
-  // Telegram integration
-  telegramChatId   String?  @unique
-  telegramLinkCode String?  @unique  // temp code for /start deep link
-
-  // Contract settings
-  contractType      String?  // "ip" | "individual" | null
-  bin               String?  // БИН (для ИП)
-  iin               String?  // ИИН (для физлица)
-  legalName         String?  // Полное ФИО / наименование ИП
-  legalAddress      String?  // Юридический адрес
-  bankName          String?  // Название банка
-  iban              String?  // IBAN (расчётный счёт)
-  kbe               String?  // КБе (код бенефициара)
-  bik               String?  // БИК банка
-  passportData      String?  // Серия/номер удостоверения (для физлица)
-  prepaymentPercent Int      @default(50)
-  warrantyMaterials Int      @default(10)
-  warrantyInstall   Int      @default(2)
-  contractCity      String?
-
-  // Subscription
-  subscriptionTier SubscriptionTier @default(FREE)
-  kpGeneratedThisMonth Int  @default(0)
-  kpMonthReset    DateTime @default(now())
-
-  isActive        Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  prices          MasterPrice[]
-  estimates       Estimate[]
-  sessions        Session[]
-  chatSessions    ChatSession[]
-  customItems     CustomItem[]
-}
-
-model Session {
-  id          String   @id @default(uuid())
-  masterId    String
-  token       String   @unique
-  expiresAt   DateTime
-  createdAt   DateTime @default(now())
-
-  master      Master   @relation(fields: [masterId], references: [id], onDelete: Cascade)
-}
-
-enum SubscriptionTier {
-  FREE
-  PRO
-}
-
-// ============================================
-// PRICING
-// ============================================
-
-model MasterPrice {
-  id          String @id @default(uuid())
-  masterId    String
-  itemCode    String
-  price       Float
-
-  master      Master @relation(fields: [masterId], references: [id], onDelete: Cascade)
-
-  @@unique([masterId, itemCode])
-}
-
-// ============================================
-// CUSTOM ITEMS (per-master custom price positions)
-// ============================================
-
-model CustomItem {
-  id        String   @id @default(uuid())
-  masterId  String
-  code      String
-  name      String
-  unit      String   // "м²" | "м.п." | "шт."
-  price     Float
-  category  String   @default("custom")
+  isProfileComplete Boolean @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  master    Master   @relation(fields: [masterId], references: [id], onDelete: Cascade)
-
-  @@unique([masterId, code])
+  sessions  Session[]
+  clients   Client[]
+  documents Document[]
 }
 
-// ============================================
-// ESTIMATES
-// ============================================
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
 
-model Estimate {
-  id              String   @id @default(uuid())
-  publicId        String   @unique @default(uuid())
-  masterId        String
-
-  // Client info
-  clientName      String?
-  clientPhone     String?
-  clientAddress   String?
-
-  // Data (JSON)
-  roomsData       Json
-  calculationData Json
-
-  // Summary
-  totalArea       Float
-  total           Float    @default(0)
-  discountPercent Float    @default(0)
-  economyTotal    Float?
-  standardTotal   Float?
-  premiumTotal    Float?
-
-  // Status
-  status          EstimateStatus @default(DRAFT)
-
-  // Variant selection
-  recommendedVariant String?  // "economy" | "standard" | "premium" — master sets this
-  confirmedVariant   String?  // which variant the client chose when confirming
-
-  // PDF
-  pdfUrl          String?
-
-  // Timestamps
-  validUntil      DateTime?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  chatSession     ChatSession?
-
-  master          Master   @relation(fields: [masterId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-enum EstimateStatus {
-  DRAFT
-  SENT
-  VIEWED
-  CONFIRMED
-  REJECTED
-  REVISED     // Мастер пересмотрел — старое КП недействительно, не считается в аналитике
+model Client {
+  id           String  @id @default(uuid())
+  userId       String
+
+  name         String
+  bin          String
+  bankName     String?
+  iban         String?
+  bik          String?
+  kbe          String?
+  address      String?
+  directorName String?
+  phone        String?
+  email        String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  documents Document[]
 }
 
-// ============================================
-// CHAT / ASSISTANT
-// ============================================
+model Document {
+  id       String @id @default(uuid())
+  userId   String
+  clientId String
 
-model ChatSession {
-  id              String      @id @default(uuid())
-  masterId        String
-  messages        Json        @default("[]")
-  photoUrls       String[]    @default([])
-  extractedRooms  Json?
-  calculationData Json?
-  estimateId      String?     @unique
-  status          ChatStatus  @default(ACTIVE)
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  type   DocumentType
+  number Int
 
-  estimate        Estimate?   @relation(fields: [estimateId], references: [id])
-  master          Master      @relation(fields: [masterId], references: [id], onDelete: Cascade)
+  serviceName String
+  unit        String  @default("услуга")
+  quantity    Decimal @default(1)
+  price       Decimal
+  total       Decimal
+
+  contractNumber String?
+  contractDate   DateTime?
+
+  date   DateTime @default(now())
+  pdfUrl String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  client Client @relation(fields: [clientId], references: [id])
+
+  @@unique([userId, type, number])
 }
 
-enum ChatStatus {
-  ACTIVE
-  COMPLETED
-  ABANDONED
+enum DocumentType {
+  INVOICE
+  AVR
+  ESF
 }
