@@ -25,7 +25,7 @@ export default function RegisterPage() {
     setLoading(true);
 
     const formData = new FormData(e.currentTarget);
-    const phone = formData.get("phone") as string;
+    const phone = "+7" + (formData.get("phone") as string).replace(/\D/g, "");
     const password = formData.get("password") as string;
     const firstName = formData.get("firstName") as string;
     const companyName = formData.get("companyName") as string;
@@ -85,14 +85,20 @@ export default function RegisterPage() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="phone">Номер телефона</Label>
-            <Input
-              id="phone"
-              name="phone"
-              type="tel"
-              placeholder="+7 700 123 4567"
-              required
-              autoComplete="tel"
-            />
+            <div className="flex">
+              <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-sm text-muted-foreground">
+                +7
+              </span>
+              <Input
+                id="phone"
+                name="phone"
+                type="tel"
+                placeholder="700 123 4567"
+                required
+                autoComplete="tel"
+                className="rounded-l-none"
+              />
+            </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">Пароль</Label>
