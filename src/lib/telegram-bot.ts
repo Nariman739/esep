@@ -419,12 +419,14 @@ function appendCalculationSummary(
   const lines = ["\n\n📊 <b>Расчёт:</b>"];
 
   for (const room of calc.roomResults) {
-    lines.push(`• ${room.roomName}: ${room.area} м² — ${room.subtotalAfterHeight.toLocaleString("ru")} ₸`);
+    const area = Math.round(room.area * 100) / 100;
+    lines.push(`• ${room.roomName}: ${area} м² — ${room.subtotalAfterHeight.toLocaleString("ru")} ₸`);
   }
 
   lines.push("");
   lines.push(`<b>Итого: ${calc.total.toLocaleString("ru")} ₸</b>`);
-  lines.push(`Площадь: ${calc.totalArea} м² | ${calc.pricePerM2.toLocaleString("ru")} ₸/м²`);
+  const totalArea = Math.round(calc.totalArea * 100) / 100;
+  lines.push(`Площадь: ${totalArea} м² | ${calc.pricePerM2.toLocaleString("ru")} ₸/м²`);
 
   return text + lines.join("\n");
 }

@@ -83,58 +83,54 @@ export function validateCustomDims(dims: CustomDimensions): string | null {
 // Area / Perimeter / BoundingBox / Corners
 // ============================================
 
-/** Area in m² based on room shape */
+/** Area in m² based on room shape (rounded to 2 decimal places) */
 export function computeArea(room: RoomInput): number {
   const shape = getRoomShape(room);
+  let area: number;
 
   if (shape === "custom" && room.customDims) {
-    return shoelaceArea(wallsToVertices(room.customDims.walls));
-  }
-
-  if (shape === "l-shape" && room.lShapeDims) {
+    area = shoelaceArea(wallsToVertices(room.customDims.walls));
+  } else if (shape === "l-shape" && room.lShapeDims) {
     if (isNewLShapeFormat(room.lShapeDims)) {
       const { a, b, d, e } = room.lShapeDims;
-      // New format: area = A*B + E*D
-      return a * b + (e!) * d;
+      area = a * b + (e!) * d;
+    } else {
+      const { a, b, c, d } = room.lShapeDims;
+      area = a * b + d * (c - b);
     }
-    // Old format: area = a*b + d*(c-b)
-    const { a, b, c, d } = room.lShapeDims;
-    return a * b + d * (c - b);
-  }
-
-  if (shape === "t-shape" && room.tShapeDims) {
+  } else if (shape === "t-shape" && room.tShapeDims) {
     const { a, b, c, d } = room.tShapeDims;
-    return a * b + c * d;
+    area = a * b + c * d;
+  } else {
+    area = room.length * room.width;
   }
 
-  return room.length * room.width;
+  return Math.round(area * 100) / 100;
 }
 
-/** Perimeter in meters based on room shape */
+/** Perimeter in meters based on room shape (rounded to 2 decimal places) */
 export function computePerimeter(room: RoomInput): number {
   const shape = getRoomShape(room);
+  let perimeter: number;
 
   if (shape === "custom" && room.customDims) {
-    return room.customDims.walls.reduce((sum, w) => sum + w.length, 0);
-  }
-
-  if (shape === "l-shape" && room.lShapeDims) {
+    perimeter = room.customDims.walls.reduce((sum, w) => sum + w.length, 0);
+  } else if (shape === "l-shape" && room.lShapeDims) {
     if (isNewLShapeFormat(room.lShapeDims)) {
       const { a, b, c, d, e } = room.lShapeDims;
-      // P = A + B + C + D + E + F, where F = B + D
-      return a + 2 * b + c + 2 * d + (e!);
+      perimeter = a + 2 * b + c + 2 * d + (e!);
+    } else {
+      const { a, c } = room.lShapeDims;
+      perimeter = 2 * (a + c);
     }
-    // Old format
-    const { a, c } = room.lShapeDims;
-    return 2 * (a + c);
-  }
-
-  if (shape === "t-shape" && room.tShapeDims) {
+  } else if (shape === "t-shape" && room.tShapeDims) {
     const { a, b, d } = room.tShapeDims;
-    return 2 * (a + b + d);
+    perimeter = 2 * (a + b + d);
+  } else {
+    perimeter = 2 * (room.length + room.width);
   }
 
-  return 2 * (room.length + room.width);
+  return Math.round(perimeter * 100) / 100;
 }
 
 /** Min bounding box dimension for canvas roll selection */
