@@ -6,14 +6,15 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 function createPrismaClient() {
-  const raw = process.env.DATABASE_URL!;
-  // Extract just the URL part in case Vercel value includes the key name as prefix
-  const extracted = raw.match(/postgres(?:ql)?:\/\/.+/s)?.[0] ?? raw;
+  const raw = process.env.DATABASE_URL ?? "";
+  // Find postgres:// or postgresql:// anywhere in the string
+  const idx = raw.search(/postgres(?:ql)?:\/\//);
+  const extracted = idx >= 0 ? raw.slice(idx) : raw;
   const url = extracted
     .replace("postgresql://", "postgres://")
-    .replace("&channel_binding=require", "")
-    .replace("?channel_binding=require", "")
+    .replace(/[?&]channel_binding=require/g, "")
     .trim();
+  console.log("PRISMA URL:", url.substring(0, 50) + "...");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const adapter = new PrismaNeonHttp(url, {} as any);
   return new PrismaClient({ adapter });
