@@ -6,7 +6,10 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 function createPrismaClient() {
-  const url = process.env.DATABASE_URL!.replace("postgresql://", "postgres://");
+  const url = process.env.DATABASE_URL!
+    .replace("postgresql://", "postgres://")
+    .replace("&channel_binding=require", "")
+    .replace("?channel_binding=require", "");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const adapter = new PrismaNeonHttp(url, {} as any);
   return new PrismaClient({ adapter });
