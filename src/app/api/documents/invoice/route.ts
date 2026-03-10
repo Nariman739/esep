@@ -80,9 +80,10 @@ export async function POST(req: NextRequest) {
       contractDate: contractDate ? new Date(contractDate) : null,
     };
 
-    const buffer = await renderToBuffer(createElement(InvoicePDF, { data: pdfData }));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const buffer = await renderToBuffer(createElement(InvoicePDF, { data: pdfData }) as any);
 
-    return new NextResponse(buffer, {
+    return new NextResponse(buffer as unknown as BodyInit, {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="schet-${number}.pdf"`,
