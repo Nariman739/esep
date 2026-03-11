@@ -1,8 +1,6 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
-import { signXml, checkNcaLayer } from "@/lib/ncalayer/client";
-import { buildInvoiceXml } from "@/lib/esf/invoice-xml";
 import type { EsfInvoiceData } from "@/lib/esf/invoice-xml";
 
 interface Client {
@@ -24,10 +22,12 @@ type Step = "form" | "signing" | "done";
 
 export default function EsfPage() {
   const [step, setStep] = useState<Step>("form");
-  const [ncaAvailable, setNcaAvailable] = useState<boolean | null>(null);
   const [clients, setClients] = useState<Client[]>([]);
   const [profile, setProfile] = useState<Profile>({});
   const [loading, setLoading] = useState(false);
+  const [p12File, setP12File] = useState<File | null>(null);
+  const [p12Password, setP12Password] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState({
     num: "",
@@ -43,7 +43,6 @@ export default function EsfPage() {
   useEffect(() => {
     fetch("/api/profile").then((r) => r.json()).then(setProfile);
     fetch("/api/clients").then((r) => r.json()).then(setClients);
-    checkNcaLayer().then(setNcaAvailable);
   }, []);
 
   const selectedClient = clients.find((c) => c.id === form.clientId);
@@ -76,29 +75,32 @@ export default function EsfPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    if (!profile.iin) {
-      toast.error("Заполните ИИН в профиле");
-      return;
-    }
-    if (!selectedClient?.bin) {
-      toast.error("У клиента не указан ИИН/БИН");
-      return;
-    }
-    if (!form.num) {
-      toast.error("Укажите номер ЭСФ");
-      return;
-    }
+    if (!profile.iin) { toast.error("Заполните ИИН в профиле"); return; }
+    if (!selectedClient?.bin) { toast.error("У клиента не указан ИИН/БИН"); return; }
+    if (!form.num) { toast.error("Укажите номер ЭСФ"); return; }
+    if (!p12File) { toast.error("Загрузите файл ЭЦП (.p12)"); return; }
+    if (!p12Password) { toast.error("Введите пароль от ЭЦП"); return; }
 
     setStep("signing");
     setLoading(true);
 
     try {
-      // Build invoice data
+      // Read .p12 as base64
+      const p12Base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const base64 = (reader.result as string).split(",")[1];
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(p12File);
+      });
+
       const invoiceData: EsfInvoiceData = {
         num: form.num,
         date: form.date,
         seller: {
-          tin: profile.iin,
+          tin: profile.iin!,
           name: profile.fullName || "",
           address: profile.address || "",
           iban: profile.iban,
@@ -123,66 +125,16 @@ export default function EsfPage() {
         contractDate: form.contractDate || undefined,
       };
 
-      // Build XML
-      const invoiceXml = buildInvoiceXml(invoiceData);
-
-      // Step 1: Get nonce from ESF
-      toast.info("Получаем nonce от ЭСФ...");
-      const nonceRes = await fetch("/api/esf/session", {
+      toast.info("Подписываем и отправляем в ЭСФ...");
+      const res = await fetch("/api/esf/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "getNonce", tin: profile.iin }),
+        body: JSON.stringify({ p12Base64, password: p12Password, invoiceData }),
       });
-      const { nonce, error: nonceErr } = await nonceRes.json();
-      if (nonceErr) throw new Error(nonceErr);
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
 
-      // Step 2: Sign nonce with NCALayer
-      toast.info("Подписываем через NCALayer... Подтвердите в диалоге NCALayer");
-      const nonceXml = `<nonce>${nonce}</nonce>`;
-      const signedNonce = await signXml(nonceXml);
-
-      // Extract signature and certificate from signed XML
-      const sigValue = signedNonce.match(/<ds:SignatureValue[^>]*>([^<]+)<\/ds:SignatureValue>/)?.[1]
-        || signedNonce.match(/<SignatureValue[^>]*>([^<]+)<\/SignatureValue>/)?.[1] || "";
-      const certValue = signedNonce.match(/<ds:X509Certificate[^>]*>([^<]+)<\/ds:X509Certificate>/)?.[1]
-        || signedNonce.match(/<X509Certificate[^>]*>([^<]+)<\/X509Certificate>/)?.[1] || "";
-
-      // Step 3: Create session
-      const sessionRes = await fetch("/api/esf/session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "create",
-          tin: profile.iin,
-          signature: sigValue,
-          certificate: certValue,
-        }),
-      });
-      const { sessionToken, error: sessionErr } = await sessionRes.json();
-      if (sessionErr) throw new Error(sessionErr);
-
-      // Step 4: Sign invoice XML with NCALayer
-      toast.info("Подписываем счёт-фактуру... Подтвердите в диалоге NCALayer");
-      const signedInvoiceXml = await signXml(invoiceXml);
-
-      // Step 5: Upload to ESF
-      toast.info("Отправляем в ЭСФ...");
-      const uploadRes = await fetch("/api/esf/upload", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ signedXml: signedInvoiceXml, sessionToken }),
-      });
-      const uploadData = await uploadRes.json();
-      if (uploadData.error) throw new Error(uploadData.error);
-
-      // Step 6: Close session
-      await fetch("/api/esf/session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "close", sessionToken }),
-      }).catch(() => {});
-
-      setResult(uploadData);
+      setResult(data);
       setStep("done");
       toast.success("ЭСФ успешно отправлен!");
     } catch (err) {
@@ -219,8 +171,8 @@ export default function EsfPage() {
     return (
       <div className="max-w-lg mx-auto mt-16 text-center">
         <div className="animate-spin text-4xl mb-4">⟳</div>
-        <h2 className="text-xl font-semibold mb-2">Подписание через NCALayer</h2>
-        <p className="text-gray-500">Подтвердите подпись в диалоге NCALayer на вашем компьютере</p>
+        <h2 className="text-xl font-semibold mb-2">Подписание и отправка</h2>
+        <p className="text-gray-500">Подписываем счёт-фактуру и отправляем в ЭСФ...</p>
       </div>
     );
   }
@@ -228,23 +180,6 @@ export default function EsfPage() {
   return (
     <div className="max-w-2xl mx-auto py-8 px-4">
       <h1 className="text-2xl font-bold mb-6">Создать ЭСФ</h1>
-
-      {/* NCALayer status */}
-      {ncaAvailable === false && (
-        <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800">
-          <p className="font-medium mb-1">NCALayer не обнаружен</p>
-          <ol className="list-decimal list-inside space-y-1">
-            <li>Убедитесь что NCALayer запущен (значок в менюбаре)</li>
-            <li>Скачайте последний NCALayer с <a href="https://pki.gov.kz" target="_blank" className="underline">pki.gov.kz</a> и переустановите</li>
-            <li>После запуска обновите эту страницу</li>
-          </ol>
-        </div>
-      )}
-      {ncaAvailable === true && (
-        <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800">
-          NCALayer запущен ✓
-        </div>
-      )}
 
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Invoice info */}
@@ -365,14 +300,39 @@ export default function EsfPage() {
           Итого: {totalSum.toLocaleString("ru-KZ")} ₸
         </div>
 
-        {/* Seller info */}
+        {/* ECP */}
+        <div className="border rounded-lg p-4 bg-gray-50 space-y-3">
+          <p className="text-sm font-medium">Электронная подпись (ЭЦП)</p>
+          <div>
+            <label className="block text-xs text-gray-600 mb-1">Файл ЭЦП (.p12) — получить на egov.kz</label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".p12,.pfx"
+              onChange={(e) => setP12File(e.target.files?.[0] || null)}
+              className="w-full text-sm"
+            />
+            {p12File && <p className="text-xs text-green-600 mt-1">Файл выбран: {p12File.name}</p>}
+          </div>
+          <div>
+            <label className="block text-xs text-gray-600 mb-1">Пароль от ЭЦП</label>
+            <input
+              type="password"
+              value={p12Password}
+              onChange={(e) => setP12Password(e.target.value)}
+              placeholder="Введите пароль"
+              className="w-full border rounded-lg px-3 py-2 text-sm"
+            />
+          </div>
+        </div>
+
         {!profile.iin && (
           <p className="text-sm text-red-500">Заполните ИИН в <a href="/dashboard/profile" className="underline">профиле</a></p>
         )}
 
         <button
           type="submit"
-          disabled={loading || !ncaAvailable || !profile.iin}
+          disabled={loading || !profile.iin || !p12File || !p12Password}
           className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium disabled:opacity-50"
         >
           {loading ? "Обработка..." : "Подписать и отправить в ЭСФ"}
