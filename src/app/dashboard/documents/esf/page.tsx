@@ -235,8 +235,8 @@ export default function EsfPage() {
           <p className="font-medium mb-1">NCALayer не обнаружен</p>
           <ol className="list-decimal list-inside space-y-1">
             <li>Убедитесь что NCALayer запущен (значок в менюбаре)</li>
-            <li>Откройте <a href="https://127.0.0.1:13580" target="_blank" className="underline font-medium">https://127.0.0.1:13580</a> и примите сертификат безопасности</li>
-            <li>Вернитесь и обновите эту страницу</li>
+            <li>Используйте браузер <strong>Chrome</strong> (не Safari)</li>
+            <li>Обновите эту страницу</li>
           </ol>
         </div>
       )}
