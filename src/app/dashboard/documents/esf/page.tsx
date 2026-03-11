@@ -232,7 +232,12 @@ export default function EsfPage() {
       {/* NCALayer status */}
       {ncaAvailable === false && (
         <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800">
-          NCALayer не обнаружен. Запустите NCALayer перед отправкой ЭСФ.
+          <p className="font-medium mb-1">NCALayer не обнаружен</p>
+          <ol className="list-decimal list-inside space-y-1">
+            <li>Убедитесь что NCALayer запущен (значок в менюбаре)</li>
+            <li>Откройте <a href="https://127.0.0.1:13580" target="_blank" className="underline font-medium">https://127.0.0.1:13580</a> и примите сертификат безопасности</li>
+            <li>Вернитесь и обновите эту страницу</li>
+          </ol>
         </div>
       )}
       {ncaAvailable === true && (

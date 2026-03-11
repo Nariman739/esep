@@ -2,7 +2,11 @@
 // NCALayer runs locally on user's machine at ws://127.0.0.1:13579
 // Handles GOST2015 and RSA certificates from НУЦ РК
 
-const WS_URL = "ws://127.0.0.1:13579";
+// Use wss:// for HTTPS pages, ws:// for HTTP
+// User must first accept NCALayer's self-signed cert at https://127.0.0.1:13580
+const WS_URL = typeof window !== "undefined" && window.location.protocol === "https:"
+  ? "wss://127.0.0.1:13580"
+  : "ws://127.0.0.1:13579";
 
 interface NCALayerResponse {
   code: string;
