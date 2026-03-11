@@ -8,9 +8,12 @@ interface Client {
   bin: string;
 }
 
+type DocType = "invoice" | "avr";
+
 export default function NewDocumentPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(false);
+  const [docType, setDocType] = useState<DocType>("invoice");
   const [form, setForm] = useState({
     clientId: "",
     serviceName: "",
@@ -34,7 +37,8 @@ export default function NewDocumentPage() {
 
     setLoading(true);
     try {
-      const res = await fetch("/api/documents/invoice", {
+      const endpoint = docType === "invoice" ? "/api/documents/invoice" : "/api/documents/avr";
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
@@ -49,10 +53,10 @@ export default function NewDocumentPage() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `schet-${Date.now()}.pdf`;
+      a.download = docType === "invoice" ? `schet-${Date.now()}.pdf` : `avr-${Date.now()}.pdf`;
       a.click();
       URL.revokeObjectURL(url);
-      toast.success("Счет создан и скачан!");
+      toast.success(docType === "invoice" ? "Счет создан и скачан!" : "АВР создан и скачан!");
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Ошибка");
     } finally {
@@ -60,17 +64,45 @@ export default function NewDocumentPage() {
     }
   }
 
+  const isInvoice = docType === "invoice";
+
   return (
     <div className="max-w-2xl space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Создать счет на оплату</h1>
-        <p className="text-gray-500 mt-1">Заполните и скачайте готовый PDF</p>
+        <h1 className="text-2xl font-bold text-gray-900">Создать документ</h1>
+        <p className="text-gray-500 mt-1">Выберите тип, заполните и скачайте PDF</p>
+      </div>
+
+      {/* Выбор типа документа */}
+      <div className="flex gap-3">
+        <button
+          onClick={() => setDocType("invoice")}
+          className={`flex-1 py-3 px-4 rounded-xl font-medium text-sm border-2 transition ${
+            isInvoice
+              ? "border-blue-600 bg-blue-50 text-blue-700"
+              : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
+          }`}
+        >
+          Счет на оплату
+        </button>
+        <button
+          onClick={() => setDocType("avr")}
+          className={`flex-1 py-3 px-4 rounded-xl font-medium text-sm border-2 transition ${
+            !isInvoice
+              ? "border-blue-600 bg-blue-50 text-blue-700"
+              : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
+          }`}
+        >
+          Акт выполненных работ
+        </button>
       </div>
 
       <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-5">
         {/* Клиент */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Клиент *</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            {isInvoice ? "Покупатель" : "Заказчик"} *
+          </label>
           {clients.length === 0 ? (
             <div className="border border-amber-200 bg-amber-50 rounded-xl px-4 py-3 text-sm text-amber-700">
               Сначала добавьте клиента в разделе{" "}
@@ -92,7 +124,9 @@ export default function NewDocumentPage() {
 
         {/* Услуга */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Название услуги *</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            {isInvoice ? "Название услуги" : "Наименование работ (услуг)"} *
+          </label>
           <input
             type="text"
             value={form.serviceName}
@@ -100,7 +134,6 @@ export default function NewDocumentPage() {
             placeholder="Разработка сайта / Монтаж натяжных потолков / Консультация"
             className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-          <p className="text-xs text-gray-400 mt-1">Это же название будет в АВР и ЭСФ — напишите точно</p>
         </div>
 
         {/* Сумма */}
@@ -130,7 +163,7 @@ export default function NewDocumentPage() {
 
         {total > 0 && (
           <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-sm">
-            <span className="text-green-700">Итого к оплате: </span>
+            <span className="text-green-700">Итого: </span>
             <span className="font-bold text-green-900 text-base">{total.toLocaleString("ru-KZ")} тг</span>
           </div>
         )}
@@ -150,7 +183,9 @@ export default function NewDocumentPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Дата счета</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            {isInvoice ? "Дата счета" : "Дата акта"}
+          </label>
           <input
             type="date"
             value={form.date}
@@ -164,7 +199,12 @@ export default function NewDocumentPage() {
           disabled={loading || clients.length === 0}
           className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold py-4 rounded-xl transition text-base"
         >
-          {loading ? "Создаём PDF..." : "Создать и скачать счет PDF"}
+          {loading
+            ? "Создаём PDF..."
+            : isInvoice
+              ? "Создать и скачать счет PDF"
+              : "Создать и скачать АВР PDF"
+          }
         </button>
       </div>
     </div>

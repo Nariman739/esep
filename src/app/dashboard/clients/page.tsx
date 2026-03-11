@@ -8,7 +8,11 @@ interface Client {
   bin: string;
   bankName?: string;
   iban?: string;
+  bik?: string;
+  kbe?: string;
+  address?: string;
   directorName?: string;
+  phone?: string;
 }
 
 interface ParsedData {
@@ -30,6 +34,7 @@ export default function ClientsPage() {
   const [parsing, setParsing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<ParsedData>({});
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/clients").then((r) => r.json()).then(setClients);
@@ -172,15 +177,48 @@ export default function ClientsPage() {
         </div>
       ) : (
         <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-          <div className="divide-y divide-gray-50">
+          <div className="divide-y divide-gray-100">
             {clients.map((client) => (
-              <div key={client.id} className="px-5 py-4 flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-gray-900">{client.name}</p>
-                  <p className="text-sm text-gray-500">БИН: {client.bin}</p>
-                </div>
-                {client.directorName && (
-                  <p className="text-sm text-gray-400">{client.directorName}</p>
+              <div key={client.id}>
+                <button
+                  onClick={() => setExpandedId(expandedId === client.id ? null : client.id)}
+                  className="w-full px-5 py-4 flex items-center justify-between hover:bg-gray-50 transition text-left"
+                >
+                  <div>
+                    <p className="font-medium text-gray-900">{client.name}</p>
+                    <p className="text-sm text-gray-500">БИН: {client.bin}</p>
+                  </div>
+                  <span className="text-gray-400 text-sm">{expandedId === client.id ? "▲" : "▼"}</span>
+                </button>
+                {expandedId === client.id && (
+                  <div className="px-5 pb-4 space-y-2 border-t border-gray-100 pt-3 bg-gray-50">
+                    {client.bankName && <p className="text-sm text-gray-600">Банк: {client.bankName}</p>}
+                    {client.iban && <p className="text-sm text-gray-600">ИИК: {client.iban}</p>}
+                    {client.bik && <p className="text-sm text-gray-600">БИК: {client.bik}</p>}
+                    {client.kbe && <p className="text-sm text-gray-600">КБе: {client.kbe}</p>}
+                    {client.address && <p className="text-sm text-gray-600">Адрес: {client.address}</p>}
+                    {client.directorName && <p className="text-sm text-gray-600">Директор: {client.directorName}</p>}
+                    {client.phone && <p className="text-sm text-gray-600">Тел: {client.phone}</p>}
+                    <button
+                      onClick={async () => {
+                        if (!confirm("Удалить клиента?")) return;
+                        const res = await fetch("/api/clients", {
+                          method: "DELETE",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ id: client.id }),
+                        });
+                        if (res.ok) {
+                          setClients(clients.filter((c) => c.id !== client.id));
+                          toast.success("Клиент удалён");
+                        } else {
+                          toast.error("Ошибка удаления");
+                        }
+                      }}
+                      className="text-sm text-red-500 hover:text-red-700 font-medium mt-2"
+                    >
+                      Удалить клиента
+                    </button>
+                  </div>
                 )}
               </div>
             ))}

@@ -15,6 +15,21 @@ export async function GET() {
   }
 }
 
+export async function DELETE(req: NextRequest) {
+  try {
+    const user = await requireAuth();
+    const { id } = await req.json();
+    if (!id) return NextResponse.json({ error: "Нет ID" }, { status: 400 });
+
+    await prisma.client.deleteMany({
+      where: { id, userId: user.id },
+    });
+    return NextResponse.json({ ok: true });
+  } catch {
+    return NextResponse.json({ error: "Ошибка удаления" }, { status: 500 });
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const user = await requireAuth();
