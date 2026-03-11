@@ -121,7 +121,7 @@ export default function ProfilePage() {
           {field("Банк", "bankName", "АО «Kaspi Bank»")}
           {field("ИИК (IBAN)", "iban", "KZ...")}
           {field("БИК", "bik", "CASPKZKA")}
-          {field("КБе", "kbe", "17")}
+          {field("КБе", "kbe", "19 (для ИП) / 17 (для ТОО)")}
           {field("Юридический адрес", "address", "г. Алматы, ул. ...")}
           {field("ФИО руководителя", "directorName", "Жаминов Нариман Ерланович")}
           {field("Телефон", "phone", "+7 777 000 00 00")}
