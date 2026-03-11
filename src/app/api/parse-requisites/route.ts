@@ -34,7 +34,9 @@ export async function POST(req: NextRequest) {
       ],
     });
 
-    const content = response.choices[0]?.message?.content ?? "{}";
+    let content = response.choices[0]?.message?.content ?? "{}";
+    // Strip markdown code blocks if present
+    content = content.replace(/^```(?:json)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
     const parsed = JSON.parse(content);
     return NextResponse.json(parsed);
   } catch {

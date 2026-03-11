@@ -45,6 +45,10 @@ export default function ClientsPage() {
         body: JSON.stringify({ text: pasteText }),
       });
       const parsed = await res.json();
+      if (!res.ok || parsed.error) {
+        toast.error(parsed.error || "Ошибка распознавания");
+        return;
+      }
       setForm(parsed);
       setPasteText("");
       toast.success("Реквизиты распознаны!");
