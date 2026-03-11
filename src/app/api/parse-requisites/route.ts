@@ -39,7 +39,9 @@ export async function POST(req: NextRequest) {
     content = content.replace(/^```(?:json)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
     const parsed = JSON.parse(content);
     return NextResponse.json(parsed);
-  } catch {
-    return NextResponse.json({ error: "Ошибка парсинга" }, { status: 500 });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error("parse-requisites error:", msg);
+    return NextResponse.json({ error: "Ошибка парсинга", details: msg }, { status: 500 });
   }
 }
