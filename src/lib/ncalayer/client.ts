@@ -1,9 +1,9 @@
 // NCALayer WebSocket client
-// NCALayer runs locally on user's machine at ws://127.0.0.1:13579
+// NCALayer runs locally on user's machine at wss://127.0.0.1:13580
 // Handles GOST2015 and RSA certificates from НУЦ РК
 
-// Always use ws://13579 — Chrome flag --unsafely-treat-insecure-origin-as-secure allows this
-const WS_URL = "ws://127.0.0.1:13579";
+// wss://13580 is the TLS port (required for HTTPS sites, mixed content policy)
+const WS_URL = "wss://127.0.0.1:13580";
 
 interface NCALayerResponse {
   code: string;
