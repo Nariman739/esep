@@ -2,8 +2,10 @@
 // NCALayer runs locally on user's machine at ws://127.0.0.1:13579
 // Handles GOST2015 and RSA certificates from НУЦ РК
 
-// Chrome allows ws://localhost from HTTPS pages (localhost exception)
-const WS_URL = "ws://127.0.0.1:13579";
+// wss://13580 for HTTPS pages, ws://13579 for HTTP
+const WS_URL = typeof window !== "undefined" && window.location.protocol === "https:"
+  ? "wss://127.0.0.1:13580"
+  : "ws://127.0.0.1:13579";
 
 interface NCALayerResponse {
   code: string;

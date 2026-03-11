@@ -235,8 +235,8 @@ export default function EsfPage() {
           <p className="font-medium mb-1">NCALayer не обнаружен</p>
           <ol className="list-decimal list-inside space-y-1">
             <li>Убедитесь что NCALayer запущен (значок в менюбаре)</li>
-            <li>Используйте браузер <strong>Chrome</strong> (не Safari)</li>
-            <li>Обновите эту страницу</li>
+            <li>Скачайте последний NCALayer с <a href="https://pki.gov.kz" target="_blank" className="underline">pki.gov.kz</a> и переустановите</li>
+            <li>После запуска обновите эту страницу</li>
           </ol>
         </div>
       )}
