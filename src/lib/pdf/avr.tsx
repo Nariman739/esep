@@ -95,6 +95,10 @@ interface Party {
   address: string;
   phone?: string;
   directorName: string;
+  bankName?: string;
+  iban?: string;
+  bik?: string;
+  kbe?: string;
 }
 
 interface AvrData {
@@ -114,8 +118,11 @@ interface AvrData {
 export function AvrPDF({ data }: { data: AvrData }) {
   const { number, date, seller, buyer, serviceName, unit, quantity, price, total } = data;
 
-  const sellerInfo = `${seller.name}${seller.address ? `, ${seller.address}` : ""}${seller.phone ? `, тел: ${seller.phone}` : ""}`;
-  const buyerInfo = `${buyer.name}${buyer.address ? `, ${buyer.address}` : ""}`;
+  const sellerBank = [seller.bankName, seller.iban ? `ИИК ${seller.iban}` : null, seller.bik ? `БИК ${seller.bik}` : null, seller.kbe ? `КБЕ ${seller.kbe}` : null].filter(Boolean).join(", ");
+  const sellerInfo = `${seller.name}${seller.address ? `, ${seller.address}` : ""}${seller.phone ? `, тел: ${seller.phone}` : ""}${sellerBank ? `\n${sellerBank}` : ""}`;
+
+  const buyerBank = [buyer.bankName, buyer.iban ? `ИИК ${buyer.iban}` : null, buyer.bik ? `БИК ${buyer.bik}` : null, buyer.kbe ? `КБЕ ${buyer.kbe}` : null].filter(Boolean).join(", ");
+  const buyerInfo = `${buyer.name}${buyer.address ? `, ${buyer.address}` : ""}${buyer.phone ? `, тел: ${buyer.phone}` : ""}${buyerBank ? `\n${buyerBank}` : ""}`;
 
   return (
     <Document>

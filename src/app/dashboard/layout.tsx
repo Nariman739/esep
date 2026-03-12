@@ -16,7 +16,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
             <div className="flex gap-4 text-sm">
               <Link href="/dashboard" className="text-gray-600 hover:text-gray-900 font-medium">Главная</Link>
               <Link href="/dashboard/clients" className="text-gray-600 hover:text-gray-900 font-medium">Клиенты</Link>
-              <Link href="/dashboard/documents/new" className="text-gray-600 hover:text-gray-900 font-medium">Создать документ</Link>
+              <Link href="/dashboard/documents" className="text-gray-600 hover:text-gray-900 font-medium">Документы</Link>
+              <Link href="/dashboard/documents/new" className="text-gray-600 hover:text-gray-900 font-medium">Создать</Link>
               <Link href="/dashboard/documents/esf" className="text-gray-600 hover:text-gray-900 font-medium">ЭСФ</Link>
               <Link href="/dashboard/profile" className="text-gray-600 hover:text-gray-900 font-medium">Мои реквизиты</Link>
             </div>

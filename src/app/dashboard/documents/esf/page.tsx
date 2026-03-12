@@ -8,6 +8,10 @@ interface Client {
   name: string;
   bin?: string;
   address?: string;
+  bankName?: string;
+  iban?: string;
+  bik?: string;
+  kbe?: string;
 }
 
 interface Profile {
@@ -16,6 +20,8 @@ interface Profile {
   address?: string;
   iban?: string;
   bik?: string;
+  bankName?: string;
+  kbe?: string;
 }
 
 type Step = "form" | "signing" | "done";
@@ -225,6 +231,34 @@ export default function EsfPage() {
           )}
         </div>
 
+        {/* Requisites */}
+        {(profile.iin || selectedClient?.bin) && (
+          <div className="grid grid-cols-2 gap-3">
+            {profile.iin && (
+              <div className="border border-gray-200 rounded-lg p-3 bg-gray-50 text-xs space-y-0.5">
+                <p className="font-semibold text-gray-700 mb-1">Исполнитель</p>
+                <p className="text-gray-600">{profile.fullName}</p>
+                <p className="text-gray-500">ИИН: {profile.iin}</p>
+                {profile.bankName && <p className="text-gray-500">{profile.bankName}</p>}
+                {profile.iban && <p className="text-gray-500">ИИК: {profile.iban}</p>}
+                {profile.bik && <p className="text-gray-500">БИК: {profile.bik}</p>}
+                {profile.kbe && <p className="text-gray-500">КБЕ: {profile.kbe}</p>}
+              </div>
+            )}
+            {selectedClient?.bin && (
+              <div className="border border-gray-200 rounded-lg p-3 bg-gray-50 text-xs space-y-0.5">
+                <p className="font-semibold text-gray-700 mb-1">Заказчик</p>
+                <p className="text-gray-600">{selectedClient.name}</p>
+                <p className="text-gray-500">БИН: {selectedClient.bin}</p>
+                {selectedClient.bankName && <p className="text-gray-500">{selectedClient.bankName}</p>}
+                {selectedClient.iban && <p className="text-gray-500">ИИК: {selectedClient.iban}</p>}
+                {selectedClient.bik && <p className="text-gray-500">БИК: {selectedClient.bik}</p>}
+                {selectedClient.kbe && <p className="text-gray-500">КБЕ: {selectedClient.kbe}</p>}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Contract */}
         <div className="grid grid-cols-2 gap-4">
           <div>
@@ -278,7 +312,7 @@ export default function EsfPage() {
                 />
                 <input
                   type="number"
-                  value={item.price}
+                  value={item.price === 0 ? "" : item.price}
                   onChange={(e) => updateItem(i, "price", Number(e.target.value))}
                   placeholder="Цена"
                   min={0}

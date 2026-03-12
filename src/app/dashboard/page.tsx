@@ -67,7 +67,7 @@ export default async function DashboardPage() {
               <div key={doc.id} className="px-5 py-3 flex items-center justify-between">
                 <div>
                   <p className="font-medium text-gray-900 text-sm">
-                    Счет №{doc.number} — {doc.client.name}
+                    {doc.type === "AVR" ? "АВР" : doc.type === "ESF" ? "ЭСФ" : "Счет"} №{doc.number} — {doc.client.name}
                   </p>
                   <p className="text-xs text-gray-500">{doc.serviceName}</p>
                 </div>
