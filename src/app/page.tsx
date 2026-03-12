@@ -10,247 +10,273 @@ export default async function Home() {
     <div className="min-h-screen bg-white" style={{ fontFamily: "var(--font-inter), sans-serif" }}>
 
       {/* ─── NAV ─── */}
-      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur border-b border-gray-100 px-6 py-3.5">
-        <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center">
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                <rect x="2" y="1" width="7" height="9" rx="1" stroke="white" strokeWidth="1.5"/>
-                <path d="M4 5h3M4 7h3" stroke="white" strokeWidth="1.2" strokeLinecap="round"/>
-                <path d="M8 8l3 3" stroke="white" strokeWidth="1.4" strokeLinecap="round"/>
+      <nav className="absolute top-0 left-0 right-0 z-50 px-6 py-5">
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)" }}>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M3 2h7l3 3v9H3V2z" stroke="white" strokeWidth="1.4" strokeLinejoin="round"/>
+                <path d="M10 2v3h3" stroke="white" strokeWidth="1.4" strokeLinejoin="round"/>
+                <path d="M5 7h4M5 9.5h4M5 12h2" stroke="white" strokeWidth="1.2" strokeLinecap="round"/>
               </svg>
             </div>
-            <span className="text-lg font-bold text-gray-900 tracking-tight">Esep</span>
+            <span className="text-lg font-bold text-white tracking-tight">Esep</span>
           </div>
-          <div className="flex items-center gap-3">
-            <Link href="/login" className="text-sm text-gray-500 hover:text-gray-800 font-medium transition">
+          <div className="flex items-center gap-6">
+            <Link href="/login" className="text-sm text-white/70 hover:text-white font-medium transition">
               Войти
             </Link>
             <Link
               href="/register"
-              className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-sm font-semibold px-4 py-2 rounded-lg transition"
+              className="text-sm font-semibold px-5 py-2.5 rounded-xl text-white transition active:scale-95"
+              style={{ background: "rgba(255,255,255,0.15)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.2)" }}
             >
-              Попробовать →
+              Начать бесплатно
             </Link>
           </div>
         </div>
       </nav>
 
       {/* ─── HERO ─── */}
-      <section className="relative overflow-hidden">
-        {/* Background gradient blobs */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-[-80px] left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-blue-50 rounded-full blur-3xl opacity-60" />
-          <div className="absolute top-[60px] right-[-100px] w-[400px] h-[400px] bg-indigo-100 rounded-full blur-3xl opacity-40" />
-        </div>
+      <section
+        className="relative overflow-hidden min-h-screen flex items-center"
+        style={{ background: "linear-gradient(160deg, #0f0a1e 0%, #1a1035 50%, #0d1b3e 100%)" }}
+      >
+        {/* Decorative orbs */}
+        <div className="absolute top-[-100px] right-[-100px] w-[600px] h-[600px] rounded-full opacity-20 pointer-events-none" style={{ background: "radial-gradient(circle, #6366f1, transparent 70%)" }} />
+        <div className="absolute bottom-[-150px] left-[-50px] w-[500px] h-[500px] rounded-full opacity-15 pointer-events-none" style={{ background: "radial-gradient(circle, #8b5cf6, transparent 70%)" }} />
 
-        <div className="relative max-w-5xl mx-auto px-6 pt-24 pb-20 text-center">
-          <div className="inline-flex items-center gap-2 bg-white border border-blue-100 text-blue-600 text-xs font-semibold px-3.5 py-1.5 rounded-full mb-7 shadow-sm">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 inline-block animate-pulse" />
-            Для ИП Казахстана · Упрощённая система налогообложения
+        <div className="relative max-w-6xl mx-auto px-6 py-32 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center w-full">
+          {/* Left: text */}
+          <div>
+            <div
+              className="inline-flex items-center gap-2 text-xs font-semibold px-3.5 py-2 rounded-full mb-8"
+              style={{ background: "rgba(99,102,241,0.2)", border: "1px solid rgba(99,102,241,0.4)", color: "#a5b4fc" }}
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 inline-block" />
+              Для ИП Казахстана · Упрощённая система
+            </div>
+
+            <h1 className="font-extrabold leading-[1.05] tracking-tight mb-6" style={{ fontSize: "clamp(42px, 5vw, 68px)", color: "#ffffff" }}>
+              Хватит бояться<br />
+              <span style={{ color: "#818cf8" }}>налоговых</span><br />
+              документов
+            </h1>
+
+            <p className="text-lg leading-relaxed mb-10" style={{ color: "rgba(255,255,255,0.55)", maxWidth: "420px" }}>
+              Счет, АВР, ЭСФ — правильно и за 30 секунд. Реквизиты подставляются сами, формы проверены бухгалтером.
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Link
+                href="/register"
+                className="inline-flex items-center justify-center gap-2 font-bold px-8 py-4 rounded-xl text-base text-white transition active:scale-95"
+                style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)", boxShadow: "0 0 40px rgba(99,102,241,0.4)" }}
+              >
+                Попробовать бесплатно
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </Link>
+              <Link
+                href="/login"
+                className="inline-flex items-center justify-center font-semibold px-8 py-4 rounded-xl text-base transition"
+                style={{ color: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.15)" }}
+              >
+                Уже есть аккаунт
+              </Link>
+            </div>
           </div>
 
-          <h1 className="text-5xl sm:text-6xl font-extrabold text-gray-900 leading-[1.1] tracking-tight mb-5">
-            Счета и АВР —<br />
-            <span className="text-transparent bg-clip-text" style={{ backgroundImage: "linear-gradient(135deg, #2563eb, #7c3aed)" }}>
-              за 30 секунд
-            </span>
-          </h1>
+          {/* Right: real document card */}
+          <div className="hidden lg:flex justify-end">
+            <div className="relative">
+              {/* Glow behind card */}
+              <div className="absolute inset-[-20px] rounded-3xl opacity-30" style={{ background: "radial-gradient(circle at 50% 50%, #6366f1, transparent 70%)", filter: "blur(20px)" }} />
 
-          <p className="text-xl text-gray-500 max-w-lg mx-auto mb-10 leading-relaxed">
-            Заполните реквизиты один раз — создавайте правильные документы без ошибок и без бухгалтера рядом.
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-3 justify-center mb-16">
-            <Link
-              href="/register"
-              className="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold px-8 py-4 rounded-xl text-base shadow-lg shadow-blue-200 transition"
-            >
-              Начать бесплатно
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </Link>
-            <Link
-              href="/login"
-              className="inline-flex items-center justify-center gap-2 bg-white hover:bg-gray-50 text-gray-700 font-semibold px-8 py-4 rounded-xl text-base border border-gray-200 transition"
-            >
-              Войти в аккаунт
-            </Link>
-          </div>
-
-          {/* Document preview mockup */}
-          <div className="max-w-2xl mx-auto">
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-2xl shadow-gray-200/80 overflow-hidden text-left">
-              {/* Mock browser bar */}
-              <div className="bg-gray-50 border-b border-gray-100 px-4 py-2.5 flex items-center gap-2">
-                <div className="flex gap-1.5">
-                  <div className="w-3 h-3 rounded-full bg-red-300" />
-                  <div className="w-3 h-3 rounded-full bg-yellow-300" />
-                  <div className="w-3 h-3 rounded-full bg-green-300" />
+              {/* Document card */}
+              <div className="relative w-[380px] rounded-2xl overflow-hidden text-sm" style={{ background: "#161228", border: "1px solid rgba(255,255,255,0.1)", boxShadow: "0 32px 80px rgba(0,0,0,0.6)" }}>
+                {/* Card header */}
+                <div className="px-5 py-4 flex items-center justify-between" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+                  <div>
+                    <p className="font-bold text-white text-base">Счет на оплату № 42</p>
+                    <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "12px" }}>от 12 марта 2026 г.</p>
+                  </div>
+                  <span className="text-xs font-semibold px-2.5 py-1 rounded-lg" style={{ background: "rgba(34,197,94,0.15)", color: "#4ade80" }}>PDF готов</span>
                 </div>
-                <div className="flex-1 bg-white rounded-md px-3 py-1 text-xs text-gray-400 border border-gray-200 mx-8 text-center">
-                  esep.kz/dashboard
+
+                {/* Parties */}
+                <div className="px-5 py-4 grid grid-cols-2 gap-3" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+                  <div>
+                    <p style={{ color: "rgba(255,255,255,0.35)", fontSize: "11px", marginBottom: "4px" }}>ПОСТАВЩИК</p>
+                    <p className="font-semibold text-white text-xs">ИП Жаминов Н.Е.</p>
+                    <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "11px" }}>ИИН: 123456789012</p>
+                    <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "11px" }}>Kaspi Bank</p>
+                  </div>
+                  <div>
+                    <p style={{ color: "rgba(255,255,255,0.35)", fontSize: "11px", marginBottom: "4px" }}>ПОКУПАТЕЛЬ</p>
+                    <p className="font-semibold text-white text-xs">ТОО &ldquo;AlphaTrade&rdquo;</p>
+                    <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "11px" }}>БИН: 230840001230</p>
+                    <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "11px" }}>Halyk Bank</p>
+                  </div>
+                </div>
+
+                {/* Table */}
+                <div className="px-5 py-3" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+                  <div className="flex justify-between items-center py-2">
+                    <div>
+                      <p className="text-white text-xs font-medium">Разработка веб-сайта</p>
+                      <p style={{ color: "rgba(255,255,255,0.35)", fontSize: "11px" }}>1 услуга</p>
+                    </div>
+                    <p className="font-bold text-white">150 000 ₸</p>
+                  </div>
+                  <div className="flex justify-between items-center py-2" style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+                    <div>
+                      <p className="text-white text-xs font-medium">SEO-оптимизация</p>
+                      <p style={{ color: "rgba(255,255,255,0.35)", fontSize: "11px" }}>1 услуга</p>
+                    </div>
+                    <p className="font-bold text-white">50 000 ₸</p>
+                  </div>
+                </div>
+
+                {/* Total */}
+                <div className="px-5 py-4 flex items-center justify-between" style={{ background: "rgba(99,102,241,0.1)" }}>
+                  <div>
+                    <p style={{ color: "rgba(255,255,255,0.5)", fontSize: "12px" }}>НДС: 0 ₸</p>
+                    <p className="font-black text-white text-xl mt-0.5">Итого: 200 000 ₸</p>
+                  </div>
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "rgba(99,102,241,0.3)" }}>
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                      <path d="M4 9h10M9 4l5 5-5 5" stroke="#a5b4fc" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
                 </div>
               </div>
-              {/* Mock UI */}
-              <div className="p-5 space-y-3">
-                <div className="flex items-center justify-between mb-2">
-                  <div>
-                    <div className="h-4 w-36 bg-gray-900 rounded-md" />
-                    <div className="h-2.5 w-52 bg-gray-200 rounded-md mt-1.5" />
+
+              {/* AVR floating card */}
+              <div
+                className="absolute -left-16 bottom-[-30px] w-52 rounded-xl text-xs"
+                style={{ background: "#1e1635", border: "1px solid rgba(255,255,255,0.1)", padding: "14px", boxShadow: "0 16px 40px rgba(0,0,0,0.5)" }}
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: "rgba(34,197,94,0.2)" }}>
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                      <path d="M2 6l3 3 5-5" stroke="#4ade80" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
                   </div>
-                  <div className="h-8 w-28 bg-blue-600 rounded-lg" />
+                  <span className="font-bold text-white">АВР № 18</span>
                 </div>
-                <div className="grid grid-cols-3 gap-3">
-                  {["blue", "green", "purple"].map((c, i) => (
-                    <div key={i} className="rounded-xl border border-gray-100 p-3.5">
-                      <div className={`h-6 w-12 rounded-md mb-2 ${c === "blue" ? "bg-blue-100" : c === "green" ? "bg-green-100" : "bg-purple-100"}`} />
-                      <div className="h-2 w-16 bg-gray-200 rounded" />
-                    </div>
-                  ))}
-                </div>
-                <div className="rounded-xl border border-gray-100 overflow-hidden">
-                  {[1,2,3].map((r) => (
-                    <div key={r} className={`flex items-center gap-3 px-4 py-3 ${r < 3 ? "border-b border-gray-50" : ""}`}>
-                      <div className="h-5 w-16 bg-blue-100 rounded-lg" />
-                      <div className="flex-1 space-y-1">
-                        <div className="h-2.5 w-32 bg-gray-200 rounded" />
-                        <div className="h-2 w-24 bg-gray-100 rounded" />
-                      </div>
-                      <div className="h-2.5 w-20 bg-gray-200 rounded" />
-                      <div className="h-6 w-12 bg-gray-100 rounded-lg" />
-                    </div>
-                  ))}
-                </div>
+                <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "11px" }}>ТОО &ldquo;AlphaTrade&rdquo;</p>
+                <p className="font-bold mt-1" style={{ color: "#4ade80" }}>200 000 ₸</p>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ─── SOCIAL PROOF BAR ─── */}
-      <section className="border-y border-gray-100 bg-gray-50/50 py-5 px-6">
-        <div className="max-w-4xl mx-auto flex flex-wrap items-center justify-center gap-8 text-sm text-gray-500">
-          {[
-            { label: "Официальный формат МФ РК" },
-            { label: "Счет + АВР + ЭСФ в одном месте" },
-            { label: "Реквизиты заполняются автоматически" },
-            { label: "Скачать PDF за 30 секунд" },
-          ].map((item, i) => (
-            <div key={i} className="flex items-center gap-2">
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                <circle cx="7" cy="7" r="6" fill="#2563eb" fillOpacity="0.15"/>
-                <path d="M4 7l2 2 4-4" stroke="#2563eb" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              <span className="font-medium text-gray-600">{item.label}</span>
+      {/* ─── PAIN → SOLUTION ─── */}
+      <section className="py-24 px-6" style={{ background: "#FAFAF8" }}>
+        <div className="max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            {/* Before */}
+            <div className="rounded-2xl border border-red-100 p-8" style={{ background: "#fff8f7" }}>
+              <p className="text-xs font-bold uppercase tracking-widest text-red-400 mb-5">Раньше</p>
+              <div className="space-y-3">
+                {[
+                  "Скачать шаблон xlsx из интернета",
+                  "Заполнять реквизиты вручную каждый раз",
+                  "Бояться сделать ошибку в форме",
+                  "Звонить бухгалтеру по любому вопросу",
+                  "Не знать: правильный ли формат?",
+                ].map((item) => (
+                  <div key={item} className="flex items-start gap-3">
+                    <div className="w-4 h-4 rounded-full border-2 border-red-200 flex items-center justify-center mt-0.5 shrink-0">
+                      <div className="w-1.5 h-1.5 rounded-full bg-red-300" />
+                    </div>
+                    <p className="text-sm text-gray-500 line-through decoration-red-200">{item}</p>
+                  </div>
+                ))}
+              </div>
             </div>
-          ))}
+
+            {/* After */}
+            <div className="rounded-2xl border border-indigo-100 p-8" style={{ background: "#f7f7ff" }}>
+              <p className="text-xs font-bold uppercase tracking-widest mb-5" style={{ color: "#6366f1" }}>С Esep</p>
+              <div className="space-y-3">
+                {[
+                  "Реквизиты сохранены — вводишь один раз",
+                  "Клиенты в базе — выбираешь из списка",
+                  "Формы по официальным требованиям МФ РК",
+                  "Проверено налоговым консультантом Жаной",
+                  "PDF скачан и отправлен за 30 секунд",
+                ].map((item) => (
+                  <div key={item} className="flex items-start gap-3">
+                    <div className="w-4 h-4 rounded-full flex items-center justify-center mt-0.5 shrink-0" style={{ background: "#6366f1" }}>
+                      <svg width="8" height="8" viewBox="0 0 8 8" fill="none">
+                        <path d="M1.5 4l2 2 3-3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </div>
+                    <p className="text-sm text-gray-700 font-medium">{item}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
       {/* ─── FEATURES ─── */}
-      <section className="max-w-5xl mx-auto px-6 py-24">
-        <div className="text-center mb-14">
-          <p className="text-sm font-semibold text-blue-600 uppercase tracking-widest mb-3">Возможности</p>
-          <h2 className="text-3xl font-bold text-gray-900">Все документы ИП в одном месте</h2>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-          {[
-            {
-              color: "blue",
-              bg: "bg-blue-50",
-              border: "border-blue-100",
-              icon: (
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <rect x="4" y="2" width="12" height="16" rx="2" stroke="#2563eb" strokeWidth="1.8"/>
-                  <path d="M8 8h4M8 11h4M8 14h2" stroke="#2563eb" strokeWidth="1.5" strokeLinecap="round"/>
-                  <path d="M14 18l4 4M16 20l2-2" stroke="#2563eb" strokeWidth="1.5" strokeLinecap="round"/>
-                </svg>
-              ),
-              title: "Счет на оплату",
-              desc: "Официальный казахстанский формат. Реквизиты подставляются автоматически — PDF одним кликом.",
-              tag: "Самый частый документ",
-            },
-            {
-              color: "green",
-              bg: "bg-green-50",
-              border: "border-green-100",
-              icon: (
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <rect x="3" y="3" width="18" height="18" rx="3" stroke="#16a34a" strokeWidth="1.8"/>
-                  <path d="M7 12l3 3 7-7" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              ),
-              title: "Акт выполненных работ",
-              desc: "По форме Приложения 50 МФ РК. Реквизиты исполнителя и заказчика, банковские данные — всё включено.",
-              tag: "Требуется после услуги",
-            },
-            {
-              color: "purple",
-              bg: "bg-purple-50",
-              border: "border-purple-100",
-              icon: (
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <path d="M4 4h16v12H4z" rx="2" stroke="#7c3aed" strokeWidth="1.8"/>
-                  <path d="M8 12l2 2 4-4" stroke="#7c3aed" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M8 20h8" stroke="#7c3aed" strokeWidth="1.5" strokeLinecap="round"/>
-                </svg>
-              ),
-              title: "Электронная счёт-фактура",
-              desc: "Подпись через ЭЦП и отправка напрямую в esf.gov.kz. С этого года обязательна для всех.",
-              tag: "Обязательна с 2025 г.",
-            },
-          ].map((f) => (
-            <div key={f.title} className={`rounded-2xl border ${f.border} ${f.bg} p-6 flex flex-col gap-4`}>
-              <div className="w-11 h-11 bg-white rounded-xl flex items-center justify-center shadow-sm border border-white">
-                {f.icon}
-              </div>
-              <div>
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <h3 className="font-bold text-gray-900 text-base">{f.title}</h3>
-                </div>
-                <p className="text-sm text-gray-600 leading-relaxed">{f.desc}</p>
-              </div>
-              <div className="mt-auto">
-                <span className="inline-block text-xs font-semibold text-gray-500 bg-white/70 border border-gray-200 px-3 py-1 rounded-full">
-                  {f.tag}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ─── HOW IT WORKS ─── */}
-      <section className="bg-gray-950 py-24 px-6">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-14">
-            <p className="text-sm font-semibold text-blue-400 uppercase tracking-widest mb-3">Как это работает</p>
-            <h2 className="text-3xl font-bold text-white">От регистрации до PDF — 3 шага</h2>
+      <section className="py-24 px-6">
+        <div className="max-w-5xl mx-auto">
+          <div className="mb-14">
+            <p className="text-sm font-bold uppercase tracking-widest mb-3" style={{ color: "#6366f1" }}>Документы</p>
+            <h2 className="text-4xl font-extrabold text-gray-900 leading-tight" style={{ letterSpacing: "-0.02em" }}>
+              Три документа, которые<br />нужны каждому ИП
+            </h2>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+
+          <div className="space-y-5">
             {[
               {
-                n: "01",
-                title: "Заполните реквизиты один раз",
-                desc: "ИИН, банк, ИИК, БИК — всё сохраняется. Больше вводить не нужно.",
+                num: "01",
+                title: "Счет на оплату",
+                desc: "Официальный казахстанский формат. Поставщик, покупатель, таблица услуг, итоговая сумма прописью. Реквизиты из профиля подставляются автоматически — просто выберите клиента и укажите сумму.",
+                tags: ["PDF одним кликом", "Официальный формат РК", "Реквизиты автоматически"],
+                color: "#eff0ff",
+                accent: "#6366f1",
               },
               {
-                n: "02",
-                title: "Добавьте клиента",
-                desc: "БИН компании, адрес, банковские реквизиты — один раз, потом выбираете из списка.",
+                num: "02",
+                title: "Акт выполненных работ (АВР)",
+                desc: "Приложение 50 к приказу МФ РК от 20.12.2012 № 562. Реквизиты исполнителя и заказчика, банковские данные обеих сторон, дата выполнения, подписи. Всё как требует налоговая.",
+                tags: ["Форма Прил. 50 МФ РК", "Банк. реквизиты сторон", "Нужен перед ЭСФ"],
+                color: "#f0fdf4",
+                accent: "#16a34a",
               },
               {
-                n: "03",
-                title: "Создайте документ",
-                desc: "Укажите услугу и сумму — скачайте готовый PDF или отправьте ЭСФ.",
+                num: "03",
+                title: "Электронная счёт-фактура (ЭСФ)",
+                desc: "Подпись через ЭЦП и отправка напрямую в esf.gov.kz. С 2025 года обязательна для всех ИП. Вы загружаете .p12 файл, вводите пароль — мы отправляем.",
+                tags: ["Обязательна с 2025 г.", "Подпись ЭЦП (.p12)", "Прямо в esf.gov.kz"],
+                color: "#fdf4ff",
+                accent: "#9333ea",
               },
-            ].map((s) => (
-              <div key={s.n} className="rounded-2xl bg-gray-900 border border-gray-800 p-6">
-                <p className="text-4xl font-black text-blue-500/30 mb-4 leading-none">{s.n}</p>
-                <h3 className="font-bold text-white mb-2">{s.title}</h3>
-                <p className="text-sm text-gray-400 leading-relaxed">{s.desc}</p>
+            ].map((f) => (
+              <div key={f.num} className="rounded-2xl border border-gray-100 p-8 flex flex-col sm:flex-row gap-6 hover:shadow-lg transition-shadow" style={{ background: f.color }}>
+                <div className="shrink-0">
+                  <p className="font-black text-5xl leading-none" style={{ color: f.accent, opacity: 0.25 }}>{f.num}</p>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">{f.title}</h3>
+                  <p className="text-gray-600 leading-relaxed mb-4 text-sm">{f.desc}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {f.tags.map((tag) => (
+                      <span key={tag} className="text-xs font-semibold px-3 py-1.5 rounded-full" style={{ background: "rgba(255,255,255,0.7)", color: f.accent, border: `1px solid ${f.accent}22` }}>
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
               </div>
             ))}
           </div>
@@ -258,48 +284,51 @@ export default async function Home() {
       </section>
 
       {/* ─── EXPERT ─── */}
-      <section className="py-24 px-6">
+      <section className="py-24 px-6" style={{ background: "#0f0a1e" }}>
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
-            <p className="text-sm font-semibold text-blue-600 uppercase tracking-widest mb-3">Экспертиза</p>
-            <h2 className="text-3xl font-bold text-gray-900">Разработано вместе с бухгалтером</h2>
-            <p className="text-gray-500 mt-2 max-w-md mx-auto">Не просто программисты — каждую форму проверила реальный специалист по налогам РК</p>
+            <p className="text-sm font-bold uppercase tracking-widest mb-3" style={{ color: "#818cf8" }}>Экспертиза</p>
+            <h2 className="text-4xl font-extrabold text-white leading-tight" style={{ letterSpacing: "-0.02em" }}>
+              Не просто программисты
+            </h2>
+            <p className="mt-3 text-base" style={{ color: "rgba(255,255,255,0.5)" }}>
+              Каждую форму проверила реальный специалист по налогам РК
+            </p>
           </div>
 
-          <div className="rounded-3xl border border-gray-200 overflow-hidden shadow-xl shadow-gray-100">
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 h-2" />
-            <div className="p-8 sm:p-10 flex flex-col sm:flex-row gap-8 items-center sm:items-start">
+          <div className="rounded-3xl overflow-hidden" style={{ background: "#161228", border: "1px solid rgba(255,255,255,0.08)" }}>
+            <div className="h-1 w-full" style={{ background: "linear-gradient(90deg, #6366f1, #8b5cf6, #ec4899)" }} />
+            <div className="p-8 sm:p-10 flex flex-col sm:flex-row gap-8 items-start">
               {/* Avatar */}
-              <div className="shrink-0 text-center">
-                <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white text-4xl font-bold shadow-lg mx-auto">
+              <div className="shrink-0">
+                <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-3xl font-black text-white" style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)" }}>
                   Ж
                 </div>
-                <div className="flex items-center justify-center gap-1 mt-2">
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <circle cx="6" cy="6" r="5" fill="#2563eb"/>
-                    <path d="M3.5 6l2 2L9 4" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <div className="flex items-center gap-1.5 mt-3 justify-center">
+                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                    <circle cx="6.5" cy="6.5" r="6" fill="#6366f1"/>
+                    <path d="M4 6.5l2 2L9.5 4" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
-                  <span className="text-xs text-blue-600 font-semibold">Верифицирован</span>
+                  <span className="text-xs font-semibold" style={{ color: "#818cf8" }}>Эксперт</span>
                 </div>
               </div>
 
-              {/* Content */}
-              <div className="flex-1 text-center sm:text-left">
-                <h3 className="text-2xl font-bold text-gray-900 mb-0.5">Жана [Фамилия]</h3>
-                <p className="text-blue-600 font-semibold text-sm mb-3">Налоговый консультант · Казахстан</p>
-                <p className="text-gray-600 leading-relaxed mb-6">
-                  Все документы в Esep разработаны по требованиям налогового законодательства РК.
-                  Жана проверила каждую форму, чтобы ИП не получили замечания от налоговой.
+              <div className="flex-1">
+                <h3 className="text-2xl font-bold text-white">Жана [Фамилия]</h3>
+                <p className="text-sm mb-5" style={{ color: "#818cf8" }}>Налоговый консультант · Казахстан</p>
+                <p className="leading-relaxed mb-6" style={{ color: "rgba(255,255,255,0.6)", fontSize: "15px" }}>
+                  &ldquo;Я проверила каждую форму в Esep по требованиям налогового законодательства РК.
+                  Счёт, АВР, ЭСФ — всё соответствует актуальным приказам МФ. Как бухгалтер с опытом работы с ИП, я знаю где обычно допускают ошибки.&rdquo;
                 </p>
-                <div className="flex flex-wrap gap-4 justify-center sm:justify-start">
+                <div className="flex flex-wrap gap-4">
                   {[
                     { val: "10+", label: "лет опыта" },
-                    { val: "500+", label: "клиентов" },
+                    { val: "500+", label: "клиентов ИП" },
                     { val: "УСН", label: "специализация" },
                   ].map((stat) => (
-                    <div key={stat.label} className="bg-gray-50 rounded-xl px-5 py-3 text-center border border-gray-100">
-                      <p className="text-xl font-black text-gray-900">{stat.val}</p>
-                      <p className="text-xs text-gray-500 mt-0.5">{stat.label}</p>
+                    <div key={stat.label} className="rounded-xl px-5 py-3 text-center" style={{ background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.2)" }}>
+                      <p className="text-xl font-black text-white">{stat.val}</p>
+                      <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.4)" }}>{stat.label}</p>
                     </div>
                   ))}
                 </div>
@@ -307,21 +336,21 @@ export default async function Home() {
             </div>
           </div>
 
-          {/* Hint block */}
-          <div className="mt-5 bg-amber-50 border border-amber-200 rounded-2xl px-5 py-4 text-sm">
-            <p className="font-bold text-amber-800 mb-2">Жана, для заполнения этого блока нам нужно:</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1.5">
+          {/* Hint for Zhana */}
+          <div className="mt-5 rounded-2xl px-6 py-5" style={{ background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.2)" }}>
+            <p className="font-bold mb-3" style={{ color: "#fbbf24" }}>Жана, для заполнения блока нам нужно от вас:</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {[
                 "Фото (деловое, квадратное или 3×4)",
                 "Полное имя и фамилия",
                 "Количество лет опыта",
-                "Примерное кол-во клиентов (100+, 300+...)",
-                "2–3 предложения о себе и специализации",
+                "Кол-во клиентов (100+, 300+...)",
+                "2–3 предложения о себе",
                 "Контакт для кнопки «Задать вопрос»",
               ].map((item) => (
-                <div key={item} className="flex items-start gap-2 text-amber-700">
-                  <span className="mt-0.5 shrink-0">→</span>
-                  <span>{item}</span>
+                <div key={item} className="flex items-center gap-2 text-sm" style={{ color: "rgba(251,191,36,0.7)" }}>
+                  <span style={{ color: "#fbbf24" }}>→</span>
+                  {item}
                 </div>
               ))}
             </div>
@@ -330,44 +359,45 @@ export default async function Home() {
       </section>
 
       {/* ─── CTA ─── */}
-      <section className="px-6 pb-24">
-        <div className="max-w-3xl mx-auto rounded-3xl overflow-hidden" style={{ background: "linear-gradient(135deg, #1d4ed8, #4f46e5)" }}>
-          <div className="px-10 py-16 text-center relative">
-            <div className="absolute inset-0 opacity-10">
-              {[...Array(6)].map((_, i) => (
-                <div key={i} className="absolute w-64 h-64 rounded-full border border-white/20" style={{ top: `${i * 40 - 80}px`, left: `${i * 60 - 100}px` }} />
-              ))}
-            </div>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-3 relative">Попробуйте прямо сейчас</h2>
-            <p className="text-blue-100 text-base mb-8 relative">Бесплатно. Без скачивания. Работает в браузере.</p>
-            <Link
-              href="/register"
-              className="relative inline-flex items-center gap-2 bg-white hover:bg-gray-50 active:scale-95 text-blue-600 font-bold px-9 py-4 rounded-xl text-base transition shadow-xl shadow-blue-900/30"
-            >
-              Создать аккаунт
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </Link>
-          </div>
+      <section className="py-28 px-6">
+        <div className="max-w-3xl mx-auto text-center">
+          <p className="text-sm font-bold uppercase tracking-widest mb-4" style={{ color: "#6366f1" }}>Начните сегодня</p>
+          <h2 className="text-5xl font-extrabold text-gray-900 leading-tight mb-5" style={{ letterSpacing: "-0.02em" }}>
+            Первый документ —<br />
+            <span style={{ color: "#6366f1" }}>через 5 минут</span>
+          </h2>
+          <p className="text-xl text-gray-500 mb-10">
+            Зарегистрируйтесь, заполните реквизиты и создайте счет или АВР прямо сейчас.
+          </p>
+          <Link
+            href="/register"
+            className="inline-flex items-center gap-3 font-bold px-10 py-5 rounded-2xl text-lg text-white transition active:scale-95"
+            style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)", boxShadow: "0 20px 60px rgba(99,102,241,0.35)" }}
+          >
+            Создать аккаунт бесплатно
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M4 10h12M12 6l4 4-4 4" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </Link>
+          <p className="mt-4 text-sm text-gray-400">Бесплатно. Без карты. Без установки.</p>
         </div>
       </section>
 
       {/* ─── FOOTER ─── */}
       <footer className="border-t border-gray-100 py-8 px-6">
-        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-gray-400">
-          <div className="flex items-center gap-1.5">
-            <div className="w-5 h-5 rounded-md bg-blue-600 flex items-center justify-center">
-              <svg width="10" height="10" viewBox="0 0 14 14" fill="none">
-                <rect x="2" y="1" width="7" height="9" rx="1" stroke="white" strokeWidth="1.5"/>
-                <path d="M4 5h3M4 7h3" stroke="white" strokeWidth="1.2" strokeLinecap="round"/>
+        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)" }}>
+              <svg width="11" height="11" viewBox="0 0 16 16" fill="none">
+                <path d="M3 2h7l3 3v9H3V2z" stroke="white" strokeWidth="1.6" strokeLinejoin="round"/>
+                <path d="M10 2v3h3" stroke="white" strokeWidth="1.6" strokeLinejoin="round"/>
               </svg>
             </div>
-            <span className="font-semibold text-gray-600">Esep</span>
-            <span className="text-gray-300">·</span>
-            <span>Документы для ИП Казахстана</span>
+            <span className="font-bold text-gray-700">Esep</span>
+            <span className="text-gray-300 mx-1">·</span>
+            <span className="text-sm text-gray-400">Документы для ИП Казахстана</span>
           </div>
-          <p>Разработано совместно с налоговым консультантом Жаной · 2026</p>
+          <p className="text-sm text-gray-400">Разработано с налоговым консультантом Жаной · 2026</p>
         </div>
       </footer>
 
