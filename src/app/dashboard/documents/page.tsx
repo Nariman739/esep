@@ -39,10 +39,6 @@ export default function DocumentsPage() {
   }, []);
 
   async function downloadPdf(doc: Doc) {
-    if (doc.type === "ESF") {
-      toast.error("Повторное скачивание ЭСФ недоступно");
-      return;
-    }
     setDownloading(doc.id);
     try {
       const res = await fetch(`/api/documents/${doc.id}/pdf`);
@@ -51,7 +47,8 @@ export default function DocumentsPage() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${doc.type === "INVOICE" ? "schet" : "avr"}-${doc.number}.pdf`;
+      const prefix = doc.type === "INVOICE" ? "schet" : doc.type === "ESF" ? "esf" : "avr";
+      a.download = `${prefix}-${doc.number}.pdf`;
       a.click();
       URL.revokeObjectURL(url);
     } catch {

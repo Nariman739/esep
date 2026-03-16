@@ -1,17 +1,23 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import type { EsfInvoiceData } from "@/lib/esf/invoice-xml";
 
 interface Client {
   id: string;
   name: string;
   bin?: string;
-  address?: string;
-  bankName?: string;
-  iban?: string;
-  bik?: string;
-  kbe?: string;
+}
+
+interface AvrDocument {
+  id: string;
+  type: string;
+  number: number;
+  serviceName: string;
+  total: string;
+  date: string;
+  client: Client;
+  contractNumber?: string;
+  contractDate?: string;
 }
 
 interface Profile {
@@ -24,148 +30,83 @@ interface Profile {
   kbe?: string;
 }
 
-type Step = "form" | "signing" | "done";
-
 export default function EsfPage() {
-  const [step, setStep] = useState<Step>("form");
-  const [clients, setClients] = useState<Client[]>([]);
+  const [avrList, setAvrList] = useState<AvrDocument[]>([]);
   const [profile, setProfile] = useState<Profile>({});
+  const [selectedAvrId, setSelectedAvrId] = useState("");
+  const [turnoverDate, setTurnoverDate] = useState(new Date().toISOString().slice(0, 10));
   const [loading, setLoading] = useState(false);
-  const [p12File, setP12File] = useState<File | null>(null);
-  const [p12Password, setP12Password] = useState("");
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const [form, setForm] = useState({
-    num: "",
-    date: new Date().toISOString().slice(0, 10),
-    clientId: "",
-    contractNum: "",
-    contractDate: "",
-    items: [{ name: "", unit: "услуга", qty: 1, price: 0 }],
-  });
-
-  const [result, setResult] = useState<{ invoiceId?: string; regNum?: string } | null>(null);
+  const [done, setDone] = useState(false);
 
   useEffect(() => {
     fetch("/api/profile").then((r) => r.json()).then(setProfile);
-    fetch("/api/clients").then((r) => r.json()).then(setClients);
+    fetch("/api/documents")
+      .then((r) => r.json())
+      .then((docs: AvrDocument[]) => setAvrList(docs.filter((d: { type: string }) => d.type === "AVR")));
   }, []);
 
-  const selectedClient = clients.find((c) => c.id === form.clientId);
+  const selectedAvr = avrList.find((a) => a.id === selectedAvrId);
 
-  function updateItem(i: number, field: string, value: string | number) {
-    setForm((prev) => ({
-      ...prev,
-      items: prev.items.map((item, idx) =>
-        idx === i ? { ...item, [field]: value } : item
-      ),
-    }));
-  }
-
-  function addItem() {
-    setForm((prev) => ({
-      ...prev,
-      items: [...prev.items, { name: "", unit: "услуга", qty: 1, price: 0 }],
-    }));
-  }
-
-  function removeItem(i: number) {
-    setForm((prev) => ({
-      ...prev,
-      items: prev.items.filter((_, idx) => idx !== i),
-    }));
-  }
-
-  const totalSum = form.items.reduce((s, item) => s + item.qty * item.price, 0);
-
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleGenerate(e: React.FormEvent) {
     e.preventDefault();
 
-    if (!profile.iin) { toast.error("Заполните ИИН в профиле"); return; }
-    if (!selectedClient?.bin) { toast.error("У клиента не указан ИИН/БИН"); return; }
-    if (!form.num) { toast.error("Укажите номер ЭСФ"); return; }
-    if (!p12File) { toast.error("Загрузите файл ЭЦП (.p12)"); return; }
-    if (!p12Password) { toast.error("Введите пароль от ЭЦП"); return; }
+    if (!profile.iin) {
+      toast.error("Заполните ИИН в профиле");
+      return;
+    }
+    if (!selectedAvrId) {
+      toast.error("Выберите АВР");
+      return;
+    }
 
-    setStep("signing");
     setLoading(true);
-
     try {
-      // Read .p12 as base64
-      const p12Base64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          const base64 = (reader.result as string).split(",")[1];
-          resolve(base64);
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(p12File);
-      });
-
-      const invoiceData: EsfInvoiceData = {
-        num: form.num,
-        date: form.date,
-        seller: {
-          tin: profile.iin!,
-          name: profile.fullName || "",
-          address: profile.address || "",
-          iban: profile.iban,
-          bik: profile.bik,
-        },
-        buyer: {
-          tin: selectedClient.bin!,
-          name: selectedClient.name,
-          address: selectedClient.address || "",
-        },
-        items: form.items.map((item, i) => ({
-          num: i + 1,
-          name: item.name,
-          unit: item.unit,
-          qty: item.qty,
-          price: item.price,
-          total: item.qty * item.price,
-          ndsRate: 0,
-          ndsSum: 0,
-        })),
-        contractNum: form.contractNum || undefined,
-        contractDate: form.contractDate || undefined,
-      };
-
-      toast.info("Подписываем и отправляем в ЭСФ...");
-      const res = await fetch("/api/esf/submit", {
+      const res = await fetch("/api/documents/esf", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ p12Base64, password: p12Password, invoiceData }),
+        body: JSON.stringify({ avrId: selectedAvrId, turnoverDate }),
       });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
 
-      setResult(data);
-      setStep("done");
-      toast.success("ЭСФ успешно отправлен!");
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Ошибка генерации");
+      }
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `esf-${Date.now()}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      setDone(true);
+      toast.success("ЭСФ-шпаргалка скачана!");
     } catch (err) {
       toast.error((err as Error).message);
-      setStep("form");
     } finally {
       setLoading(false);
     }
   }
 
-  if (step === "done" && result) {
+  if (done) {
     return (
       <div className="max-w-lg mx-auto mt-16 text-center">
-        <div className="text-5xl mb-4">✓</div>
-        <h2 className="text-2xl font-bold text-green-600 mb-2">ЭСФ отправлен!</h2>
-        {result.invoiceId && <p className="text-gray-600">ID счёт-фактуры: <strong>{result.invoiceId}</strong></p>}
-        {result.regNum && <p className="text-gray-600">Рег. номер: <strong>{result.regNum}</strong></p>}
-        <div className="mt-6 flex gap-3 justify-center">
+        <div className="text-5xl mb-4 text-green-500">&#10003;</div>
+        <h2 className="text-2xl font-bold text-green-600 mb-2">PDF готов!</h2>
+        <p className="text-gray-600 mb-2">Шпаргалка для заполнения ЭСФ на портале esf.gov.kz скачана.</p>
+        <p className="text-sm text-gray-500 mb-6">
+          Откройте портал esf.gov.kz и перенесите данные из PDF в соответствующие поля.
+          Номера полей в PDF совпадают с порталом.
+        </p>
+        <div className="flex gap-3 justify-center">
           <button
-            onClick={() => { setStep("form"); setResult(null); setForm({ ...form, num: "" }); }}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg"
+            onClick={() => { setDone(false); setSelectedAvrId(""); }}
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
             Создать ещё
           </button>
-          <a href="/dashboard/documents" className="px-6 py-2 border rounded-lg">
+          <a href="/dashboard/documents" className="px-6 py-2 border rounded-lg hover:bg-gray-50">
             К документам
           </a>
         </div>
@@ -173,204 +114,99 @@ export default function EsfPage() {
     );
   }
 
-  if (step === "signing") {
-    return (
-      <div className="max-w-lg mx-auto mt-16 text-center">
-        <div className="animate-spin text-4xl mb-4">⟳</div>
-        <h2 className="text-xl font-semibold mb-2">Подписание и отправка</h2>
-        <p className="text-gray-500">Подписываем счёт-фактуру и отправляем в ЭСФ...</p>
-      </div>
-    );
-  }
-
   return (
     <div className="max-w-2xl mx-auto py-8 px-4">
-      <h1 className="text-2xl font-bold mb-6">Создать ЭСФ</h1>
+      <h1 className="text-2xl font-bold mb-2">Создать ЭСФ</h1>
+      <p className="text-sm text-gray-500 mb-6">
+        Выберите АВР — система сформирует PDF-шпаргалку со всеми данными для заполнения ЭСФ на портале esf.gov.kz
+      </p>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
-        {/* Invoice info */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Номер ЭСФ *</label>
-            <input
-              type="text"
-              value={form.num}
-              onChange={(e) => setForm({ ...form, num: e.target.value })}
-              placeholder="1"
+      <form onSubmit={handleGenerate} className="space-y-5">
+        {/* AVR selection */}
+        <div>
+          <label className="block text-sm font-medium mb-1">АВР-основание *</label>
+          {avrList.length === 0 ? (
+            <div className="border border-dashed rounded-lg p-4 text-center text-sm text-gray-500">
+              Нет созданных АВР.{" "}
+              <a href="/dashboard/documents/new" className="text-blue-600 underline">Создайте АВР</a> сначала.
+            </div>
+          ) : (
+            <select
+              value={selectedAvrId}
+              onChange={(e) => setSelectedAvrId(e.target.value)}
               className="w-full border rounded-lg px-3 py-2 text-sm"
               required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Дата</label>
-            <input
-              type="date"
-              value={form.date}
-              onChange={(e) => setForm({ ...form, date: e.target.value })}
-              className="w-full border rounded-lg px-3 py-2 text-sm"
-            />
-          </div>
-        </div>
-
-        {/* Client */}
-        <div>
-          <label className="block text-sm font-medium mb-1">Покупатель *</label>
-          <select
-            value={form.clientId}
-            onChange={(e) => setForm({ ...form, clientId: e.target.value })}
-            className="w-full border rounded-lg px-3 py-2 text-sm"
-            required
-          >
-            <option value="">Выберите клиента</option>
-            {clients.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
-          {selectedClient && !selectedClient.bin && (
-            <p className="text-xs text-red-500 mt-1">У этого клиента не указан ИИН/БИН</p>
+            >
+              <option value="">Выберите АВР</option>
+              {avrList.map((avr) => (
+                <option key={avr.id} value={avr.id}>
+                  АВР №{avr.number} — {avr.client.name} — {Number(avr.total).toLocaleString("ru-KZ")} ₸ ({new Date(avr.date).toLocaleDateString("ru-KZ")})
+                </option>
+              ))}
+            </select>
           )}
         </div>
 
-        {/* Requisites */}
-        {(profile.iin || selectedClient?.bin) && (
-          <div className="grid grid-cols-2 gap-3">
-            {profile.iin && (
-              <div className="border border-gray-200 rounded-lg p-3 bg-gray-50 text-xs space-y-0.5">
-                <p className="font-semibold text-gray-700 mb-1">Исполнитель</p>
-                <p className="text-gray-600">{profile.fullName}</p>
+        {/* Turnover date */}
+        <div>
+          <label className="block text-sm font-medium mb-1">Дата совершения оборота</label>
+          <input
+            type="date"
+            value={turnoverDate}
+            onChange={(e) => setTurnoverDate(e.target.value)}
+            className="w-full border rounded-lg px-3 py-2 text-sm"
+          />
+          <p className="text-xs text-gray-400 mt-1">Обычно совпадает с датой АВР</p>
+        </div>
+
+        {/* Preview of selected AVR */}
+        {selectedAvr && (
+          <div className="border rounded-lg p-4 bg-gray-50 space-y-3">
+            <p className="text-sm font-medium text-gray-700">Данные из АВР:</p>
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="space-y-1">
+                <p className="font-semibold text-gray-600">Поставщик (вы)</p>
+                <p>{profile.fullName}</p>
                 <p className="text-gray-500">ИИН: {profile.iin}</p>
+                {profile.address && <p className="text-gray-500">{profile.address}</p>}
                 {profile.bankName && <p className="text-gray-500">{profile.bankName}</p>}
                 {profile.iban && <p className="text-gray-500">ИИК: {profile.iban}</p>}
                 {profile.bik && <p className="text-gray-500">БИК: {profile.bik}</p>}
-                {profile.kbe && <p className="text-gray-500">КБЕ: {profile.kbe}</p>}
+                {profile.kbe && <p className="text-gray-500">КБе: {profile.kbe}</p>}
               </div>
-            )}
-            {selectedClient?.bin && (
-              <div className="border border-gray-200 rounded-lg p-3 bg-gray-50 text-xs space-y-0.5">
-                <p className="font-semibold text-gray-700 mb-1">Заказчик</p>
-                <p className="text-gray-600">{selectedClient.name}</p>
-                <p className="text-gray-500">БИН: {selectedClient.bin}</p>
-                {selectedClient.bankName && <p className="text-gray-500">{selectedClient.bankName}</p>}
-                {selectedClient.iban && <p className="text-gray-500">ИИК: {selectedClient.iban}</p>}
-                {selectedClient.bik && <p className="text-gray-500">БИК: {selectedClient.bik}</p>}
-                {selectedClient.kbe && <p className="text-gray-500">КБЕ: {selectedClient.kbe}</p>}
+              <div className="space-y-1">
+                <p className="font-semibold text-gray-600">Получатель</p>
+                <p>{selectedAvr.client.name}</p>
+                <p className="text-gray-500">БИН: {selectedAvr.client.bin}</p>
               </div>
-            )}
+            </div>
+            <div className="border-t pt-2 text-xs space-y-1">
+              <p><span className="text-gray-500">Услуга:</span> {selectedAvr.serviceName}</p>
+              <p><span className="text-gray-500">Сумма:</span> <span className="font-semibold">{Number(selectedAvr.total).toLocaleString("ru-KZ")} ₸</span></p>
+              {selectedAvr.contractNumber && (
+                <p><span className="text-gray-500">Договор:</span> {selectedAvr.contractNumber}</p>
+              )}
+            </div>
           </div>
         )}
 
-        {/* Contract */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Номер договора</label>
-            <input
-              type="text"
-              value={form.contractNum}
-              onChange={(e) => setForm({ ...form, contractNum: e.target.value })}
-              placeholder="№123"
-              className="w-full border rounded-lg px-3 py-2 text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Дата договора</label>
-            <input
-              type="date"
-              value={form.contractDate}
-              onChange={(e) => setForm({ ...form, contractDate: e.target.value })}
-              className="w-full border rounded-lg px-3 py-2 text-sm"
-            />
-          </div>
-        </div>
-
-        {/* Items */}
-        <div>
-          <label className="block text-sm font-medium mb-2">Услуги / товары</label>
-          <div className="space-y-2">
-            {form.items.map((item, i) => (
-              <div key={i} className="grid grid-cols-12 gap-2 items-center">
-                <input
-                  type="text"
-                  value={item.name}
-                  onChange={(e) => updateItem(i, "name", e.target.value)}
-                  placeholder="Название услуги"
-                  className="col-span-5 border rounded px-2 py-1.5 text-sm"
-                  required
-                />
-                <input
-                  type="text"
-                  value={item.unit}
-                  onChange={(e) => updateItem(i, "unit", e.target.value)}
-                  placeholder="услуга"
-                  className="col-span-2 border rounded px-2 py-1.5 text-sm"
-                />
-                <input
-                  type="number"
-                  value={item.qty}
-                  onChange={(e) => updateItem(i, "qty", Number(e.target.value))}
-                  min={1}
-                  className="col-span-1 border rounded px-2 py-1.5 text-sm"
-                />
-                <input
-                  type="number"
-                  value={item.price === 0 ? "" : item.price}
-                  onChange={(e) => updateItem(i, "price", Number(e.target.value))}
-                  placeholder="Цена"
-                  min={0}
-                  className="col-span-3 border rounded px-2 py-1.5 text-sm"
-                />
-                {form.items.length > 1 && (
-                  <button type="button" onClick={() => removeItem(i)} className="col-span-1 text-red-400 hover:text-red-600 text-lg">×</button>
-                )}
-              </div>
-            ))}
-          </div>
-          <button type="button" onClick={addItem} className="mt-2 text-sm text-blue-600 hover:underline">
-            + Добавить строку
-          </button>
-        </div>
-
-        {/* Total */}
-        <div className="text-right text-lg font-semibold">
-          Итого: {totalSum.toLocaleString("ru-KZ")} ₸
-        </div>
-
-        {/* ECP */}
-        <div className="border rounded-lg p-4 bg-gray-50 space-y-3">
-          <p className="text-sm font-medium">Электронная подпись (ЭЦП)</p>
-          <div>
-            <label className="block text-xs text-gray-600 mb-1">Файл ЭЦП (.p12) — получить на egov.kz</label>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".p12,.pfx"
-              onChange={(e) => setP12File(e.target.files?.[0] || null)}
-              className="w-full text-sm"
-            />
-            {p12File && <p className="text-xs text-green-600 mt-1">Файл выбран: {p12File.name}</p>}
-          </div>
-          <div>
-            <label className="block text-xs text-gray-600 mb-1">Пароль от ЭЦП</label>
-            <input
-              type="password"
-              value={p12Password}
-              onChange={(e) => setP12Password(e.target.value)}
-              placeholder="Введите пароль"
-              className="w-full border rounded-lg px-3 py-2 text-sm"
-            />
-          </div>
-        </div>
-
         {!profile.iin && (
-          <p className="text-sm text-red-500">Заполните ИИН в <a href="/dashboard/profile" className="underline">профиле</a></p>
+          <p className="text-sm text-red-500">
+            Заполните ИИН в <a href="/dashboard/profile" className="underline">профиле</a>
+          </p>
         )}
 
         <button
           type="submit"
-          disabled={loading || !profile.iin || !p12File || !p12Password}
-          className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium disabled:opacity-50"
+          disabled={loading || !profile.iin || !selectedAvrId}
+          className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium disabled:opacity-50 hover:bg-blue-700"
         >
-          {loading ? "Обработка..." : "Подписать и отправить в ЭСФ"}
+          {loading ? "Генерация PDF..." : "Скачать ЭСФ-шпаргалку (PDF)"}
         </button>
+
+        <p className="text-xs text-gray-400 text-center">
+          PDF будет содержать все разделы A-G с номерами полей как на портале esf.gov.kz
+        </p>
       </form>
     </div>
   );

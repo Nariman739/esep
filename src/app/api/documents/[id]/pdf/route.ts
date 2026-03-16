@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { InvoicePDF } from "@/lib/pdf/invoice";
 import { AvrPDF } from "@/lib/pdf/avr";
+import { EsfPDF } from "@/lib/pdf/esf";
+import { formatDate } from "@/lib/utils";
 import { createElement } from "react";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -59,6 +61,22 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       buffer = await renderToBuffer(createElement(InvoicePDF, { data: pdfData }) as any);
       filename = `schet-${doc.number}.pdf`;
+    } else if (doc.type === "ESF") {
+      const esfPdfData = {
+        number: String(doc.number),
+        date: doc.date,
+        turnoverDate: doc.date,
+        seller: { iin: seller.iin, name: seller.name, address: seller.address, kbe: seller.kbe, iban: seller.iban, bik: seller.bik, bankName: seller.bankName },
+        buyer: { iin: buyer.bin, name: buyer.name, address: buyer.address, kbe: buyer.kbe, iban: buyer.iban, bik: buyer.bik, bankName: buyer.bankName },
+        items: [{ name: doc.serviceName, unit: doc.unit, qty: Number(doc.quantity), price: Number(doc.price), total: Number(doc.total) }],
+        totalSum: Number(doc.total),
+        hasContract: !!doc.contractNumber,
+        contractNumber: doc.contractNumber || undefined,
+        contractDate: doc.contractDate ? formatDate(new Date(doc.contractDate)) : undefined,
+      };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      buffer = await renderToBuffer(createElement(EsfPDF, { data: esfPdfData }) as any);
+      filename = `esf-${doc.number}.pdf`;
     } else {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       buffer = await renderToBuffer(createElement(AvrPDF, { data: pdfData }) as any);
