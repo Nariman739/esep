@@ -26,14 +26,14 @@ const s = StyleSheet.create({
   },
 
   // Field row
-  fieldRow: { flexDirection: "row", borderBottomWidth: 0.5, borderBottomColor: "#d1d5db", paddingVertical: 3 },
+  fieldRow: { flexDirection: "row", borderBottomWidth: 0.5, borderBottomColor: "#d1d5db", paddingTop: 3, paddingBottom: 3 },
   fieldNum: { width: 28, fontSize: 7, color: "#6b7280", paddingTop: 1 },
   fieldLabel: { width: 160, fontSize: 8, color: "#374151", paddingTop: 1 },
   fieldValue: { flex: 1, fontSize: 8, fontWeight: 700, paddingLeft: 6, minHeight: 12, backgroundColor: "#f9fafb", padding: "2 6", borderRadius: 2 },
   fieldValueEmpty: { flex: 1, fontSize: 7, color: "#9ca3af", fontStyle: "italic", paddingLeft: 6, minHeight: 12, backgroundColor: "#f9fafb", padding: "2 6", borderRadius: 2 },
 
   // Checkbox
-  checkRow: { flexDirection: "row", alignItems: "center", paddingVertical: 2, paddingLeft: 28 },
+  checkRow: { flexDirection: "row", alignItems: "center", paddingTop: 2, paddingBottom: 2, paddingLeft: 28 },
   checkbox: { width: 10, height: 10, borderWidth: 1, borderColor: "#9ca3af", borderRadius: 2, marginRight: 6, textAlign: "center", fontSize: 8 },
   checkboxChecked: { width: 10, height: 10, borderWidth: 1, borderColor: "#3b82f6", borderRadius: 2, marginRight: 6, textAlign: "center", fontSize: 8, backgroundColor: "#dbeafe" },
   checkLabel: { fontSize: 8, color: "#374151" },
@@ -223,12 +223,12 @@ export function EsfPDF({ data }: { data: EsfPdfData }) {
         <Text style={s.sectionHeader}>G. Данные по товарам, работам, услугам</Text>
         <View style={{ marginTop: 4, marginBottom: 4 }}>
           <Field num="33.1." label="Код валюты" value="KZT - Тенге (Казахстан)" />
-          <View style={{ flexDirection: "row", paddingLeft: 28, marginTop: 4, gap: 16 }}>
+          <View style={{ flexDirection: "row", paddingLeft: 28, marginTop: 4 }}>
             <View style={{ flexDirection: "row", alignItems: "center" }}>
               <Text style={{ fontSize: 8, marginRight: 4 }}>Направление расчета:</Text>
               <Text style={{ fontSize: 8, fontWeight: 700, backgroundColor: "#dbeafe", padding: "1 6", borderRadius: 2 }}>Прямой расчет</Text>
             </View>
-            <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <View style={{ flexDirection: "row", alignItems: "center", marginLeft: 16 }}>
               <Text style={{ fontSize: 8, marginRight: 4 }}>Способ расчета:</Text>
               <Text style={{ fontSize: 8, fontWeight: 700, backgroundColor: "#dbeafe", padding: "1 6", borderRadius: 2 }}>Автоматический</Text>
             </View>
