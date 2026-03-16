@@ -100,7 +100,8 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: "Ошибка генерации ЭСФ" }, { status: 500 });
+    console.error("ESF generation error:", err);
+    const message = err instanceof Error ? err.message : "Неизвестная ошибка";
+    return NextResponse.json({ error: `Ошибка генерации ЭСФ: ${message}` }, { status: 500 });
   }
 }
