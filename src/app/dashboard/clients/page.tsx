@@ -30,6 +30,7 @@ interface ParsedData {
 export default function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [pasteText, setPasteText] = useState("");
   const [parsing, setParsing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -71,22 +72,69 @@ export default function ClientsPage() {
     }
     setSaving(true);
     try {
-      const res = await fetch("/api/clients", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-      if (!res.ok) throw new Error();
-      const newClient = await res.json();
-      setClients([newClient, ...clients]);
+      if (editingId) {
+        const res = await fetch("/api/clients", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: editingId, ...form }),
+        });
+        if (!res.ok) throw new Error();
+        const updated = await res.json();
+        setClients(clients.map((c) => (c.id === editingId ? updated : c)));
+        toast.success("Клиент обновлён!");
+      } else {
+        const res = await fetch("/api/clients", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(form),
+        });
+        if (!res.ok) throw new Error();
+        const newClient = await res.json();
+        setClients([newClient, ...clients]);
+        toast.success("Клиент добавлен!");
+      }
       setShowForm(false);
+      setEditingId(null);
       setForm({});
-      toast.success("Клиент добавлен!");
     } catch {
       toast.error("Ошибка сохранения");
     } finally {
       setSaving(false);
     }
+  }
+
+  function startEdit(client: Client) {
+    setForm({
+      name: client.name,
+      bin: client.bin,
+      bankName: client.bankName,
+      iban: client.iban,
+      bik: client.bik,
+      kbe: client.kbe,
+      address: client.address,
+      directorName: client.directorName,
+      phone: client.phone,
+    });
+    setEditingId(client.id);
+    setShowForm(true);
+    setExpandedId(null);
+  }
+
+  // Auto KBE: ИП (ИИН) = 19, ТОО (БИН юр.лица) = 17
+  function autoKbe(bin: string): string | undefined {
+    if (bin.length !== 12) return undefined;
+    const d5 = parseInt(bin[4]);
+    // 5-я цифра: 4,5,6 = юр.лицо; 0,1,2,3 = ИП/физлицо
+    return d5 >= 4 ? "17" : "19";
+  }
+
+  function handleBinChange(val: string) {
+    const upd: ParsedData = { ...form, bin: val };
+    if (!form.kbe || form.kbe === "17" || form.kbe === "19") {
+      const kbe = autoKbe(val);
+      if (kbe) upd.kbe = kbe;
+    }
+    setForm(upd);
   }
 
   const field = (label: string, key: keyof ParsedData, placeholder?: string) => (
@@ -119,7 +167,7 @@ export default function ClientsPage() {
 
       {showForm && (
         <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-5">
-          <h2 className="font-semibold text-gray-900">Новый клиент</h2>
+          <h2 className="font-semibold text-gray-900">{editingId ? "Редактировать клиента" : "Новый клиент"}</h2>
 
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
             <p className="text-sm text-blue-800 font-medium mb-2">
@@ -143,7 +191,16 @@ export default function ClientsPage() {
 
           <div className="grid grid-cols-2 gap-4">
             {field("Название *", "name", "ТОО «RightPartners»")}
-            {field("БИН *", "bin", "201040022708")}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">БИН *</label>
+              <input
+                type="text"
+                value={form.bin || ""}
+                onChange={(e) => handleBinChange(e.target.value)}
+                placeholder="201040022708"
+                className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
             {field("Банк", "bankName", "Народный Банк")}
             {field("ИИК", "iban", "KZ...")}
             {field("БИК", "bik", "HSBKKZKX")}
@@ -158,10 +215,10 @@ export default function ClientsPage() {
               disabled={saving}
               className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition"
             >
-              {saving ? "Сохраняем..." : "Сохранить клиента"}
+              {saving ? "Сохраняем..." : editingId ? "Обновить клиента" : "Сохранить клиента"}
             </button>
             <button
-              onClick={() => { setShowForm(false); setForm({}); }}
+              onClick={() => { setShowForm(false); setEditingId(null); setForm({}); }}
               className="px-6 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition"
             >
               Отмена
@@ -199,6 +256,13 @@ export default function ClientsPage() {
                     {client.address && <p className="text-sm text-gray-600">Адрес: {client.address}</p>}
                     {client.directorName && <p className="text-sm text-gray-600">Директор: {client.directorName}</p>}
                     {client.phone && <p className="text-sm text-gray-600">Тел: {client.phone}</p>}
+                    <div className="flex gap-3 mt-2">
+                    <button
+                      onClick={() => startEdit(client)}
+                      className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                    >
+                      Редактировать
+                    </button>
                     <button
                       onClick={async () => {
                         if (!confirm("Удалить клиента?")) return;
@@ -214,10 +278,11 @@ export default function ClientsPage() {
                           toast.error("Ошибка удаления");
                         }
                       }}
-                      className="text-sm text-red-500 hover:text-red-700 font-medium mt-2"
+                      className="text-sm text-red-500 hover:text-red-700 font-medium"
                     >
                       Удалить клиента
                     </button>
+                    </div>
                   </div>
                 )}
               </div>

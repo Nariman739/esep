@@ -207,41 +207,43 @@ export default function DocumentsPage() {
               }
               return true;
             }).map((doc) => (
-              <div key={doc.id} className="px-5 py-4 flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3 min-w-0">
-                  <span className={`text-xs font-semibold px-2 py-1 rounded-lg shrink-0 ${TYPE_COLOR[doc.type]}`}>
-                    {TYPE_LABEL[doc.type]} №{doc.number}
-                  </span>
-                  <div className="min-w-0">
-                    <p className="font-medium text-gray-900 text-sm truncate">{doc.client.name}</p>
-                    <p className="text-xs text-gray-500 truncate">{doc.serviceName}</p>
+              <div key={doc.id} className="px-4 sm:px-5 py-3 sm:py-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                    <span className={`text-xs font-semibold px-2 py-1 rounded-lg shrink-0 ${TYPE_COLOR[doc.type]}`}>
+                      {TYPE_LABEL[doc.type]} №{doc.number}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="font-medium text-gray-900 text-sm truncate">{doc.client.name}</p>
+                      <p className="text-xs text-gray-500 truncate hidden sm:block">{doc.serviceName}</p>
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-3 shrink-0">
-                  <div className="text-right hidden sm:block">
+                  <div className="text-right shrink-0">
                     <p className="font-semibold text-gray-900 text-sm">
                       {Number(doc.total).toLocaleString("ru-KZ")} тг
                     </p>
                     <p className="text-xs text-gray-400">{formatDate(doc.date)}</p>
                   </div>
+                </div>
+                <div className="flex items-center gap-2 mt-2">
                   <button
                     onClick={() => previewPdf(doc)}
                     disabled={downloading === doc.id}
-                    className="text-xs bg-blue-50 hover:bg-blue-100 disabled:opacity-50 text-blue-700 font-medium px-3 py-2 rounded-lg transition"
+                    className="text-xs bg-blue-50 hover:bg-blue-100 disabled:opacity-50 text-blue-700 font-medium px-3 py-1.5 rounded-lg transition"
                   >
                     {downloading === doc.id ? "..." : "Просмотр"}
                   </button>
                   <button
                     onClick={() => downloadPdf(doc)}
                     disabled={downloading === doc.id}
-                    className="text-xs bg-gray-100 hover:bg-gray-200 disabled:opacity-50 text-gray-700 font-medium px-3 py-2 rounded-lg transition"
+                    className="text-xs bg-gray-100 hover:bg-gray-200 disabled:opacity-50 text-gray-700 font-medium px-3 py-1.5 rounded-lg transition"
                   >
                     Скачать
                   </button>
                   {doc.type !== "ESF" && (
                     <button
                       onClick={() => duplicateDoc(doc)}
-                      className="text-xs text-gray-400 hover:text-blue-600 font-medium px-1 py-2 transition"
+                      className="text-xs text-gray-400 hover:text-blue-600 font-medium px-1.5 py-1.5 transition"
                       title="Дублировать"
                     >
                       ⧉
@@ -249,7 +251,7 @@ export default function DocumentsPage() {
                   )}
                   <button
                     onClick={() => deleteDoc(doc)}
-                    className="text-xs text-red-400 hover:text-red-600 font-medium px-1 py-2 transition"
+                    className="text-xs text-red-400 hover:text-red-600 font-medium px-1.5 py-1.5 transition ml-auto"
                     title="Удалить"
                   >
                     ×

@@ -30,6 +30,41 @@ export async function DELETE(req: NextRequest) {
   }
 }
 
+export async function PUT(req: NextRequest) {
+  try {
+    const user = await requireAuth();
+    const data = await req.json();
+
+    if (!data.id || !data.name || !data.bin) {
+      return NextResponse.json({ error: "Укажите ID, название и БИН" }, { status: 400 });
+    }
+
+    const client = await prisma.client.updateMany({
+      where: { id: data.id, userId: user.id },
+      data: {
+        name: data.name,
+        bin: data.bin,
+        bankName: data.bankName || null,
+        iban: data.iban || null,
+        bik: data.bik || null,
+        kbe: data.kbe || null,
+        address: data.address || null,
+        directorName: data.directorName || null,
+        phone: data.phone || null,
+      },
+    });
+
+    if (client.count === 0) {
+      return NextResponse.json({ error: "Клиент не найден" }, { status: 404 });
+    }
+
+    const updated = await prisma.client.findFirst({ where: { id: data.id, userId: user.id } });
+    return NextResponse.json(updated);
+  } catch {
+    return NextResponse.json({ error: "Ошибка обновления" }, { status: 500 });
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const user = await requireAuth();
