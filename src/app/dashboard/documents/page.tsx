@@ -30,6 +30,8 @@ export default function DocumentsPage() {
   const [docs, setDocs] = useState<Doc[]>([]);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewTitle, setPreviewTitle] = useState("");
 
   useEffect(() => {
     fetch("/api/documents")
@@ -38,12 +40,23 @@ export default function DocumentsPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  // Cleanup preview URL on unmount
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
+
+  async function getPdfBlob(docId: string) {
+    const res = await fetch(`/api/documents/${docId}/pdf`);
+    if (!res.ok) throw new Error("Ошибка загрузки PDF");
+    return await res.blob();
+  }
+
   async function downloadPdf(doc: Doc) {
     setDownloading(doc.id);
     try {
-      const res = await fetch(`/api/documents/${doc.id}/pdf`);
-      if (!res.ok) throw new Error("Ошибка");
-      const blob = await res.blob();
+      const blob = await getPdfBlob(doc.id);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -56,6 +69,27 @@ export default function DocumentsPage() {
     } finally {
       setDownloading(null);
     }
+  }
+
+  async function previewPdf(doc: Doc) {
+    setDownloading(doc.id);
+    try {
+      const blob = await getPdfBlob(doc.id);
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      const url = URL.createObjectURL(blob);
+      setPreviewUrl(url);
+      setPreviewTitle(`${TYPE_LABEL[doc.type]} №${doc.number} — ${doc.client.name}`);
+    } catch {
+      toast.error("Не удалось загрузить PDF");
+    } finally {
+      setDownloading(null);
+    }
+  }
+
+  function closePreview() {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(null);
+    setPreviewTitle("");
   }
 
   const formatDate = (d: string) =>
@@ -99,25 +133,61 @@ export default function DocumentsPage() {
                     <p className="text-xs text-gray-500 truncate">{doc.serviceName}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-4 shrink-0">
+                <div className="flex items-center gap-3 shrink-0">
                   <div className="text-right hidden sm:block">
                     <p className="font-semibold text-gray-900 text-sm">
                       {Number(doc.total).toLocaleString("ru-KZ")} тг
                     </p>
                     <p className="text-xs text-gray-400">{formatDate(doc.date)}</p>
                   </div>
-                  {doc.type !== "ESF" && (
-                    <button
-                      onClick={() => downloadPdf(doc)}
-                      disabled={downloading === doc.id}
-                      className="text-xs bg-gray-100 hover:bg-gray-200 disabled:opacity-50 text-gray-700 font-medium px-3 py-2 rounded-lg transition"
-                    >
-                      {downloading === doc.id ? "..." : "PDF"}
-                    </button>
-                  )}
+                  <button
+                    onClick={() => previewPdf(doc)}
+                    disabled={downloading === doc.id}
+                    className="text-xs bg-blue-50 hover:bg-blue-100 disabled:opacity-50 text-blue-700 font-medium px-3 py-2 rounded-lg transition"
+                  >
+                    {downloading === doc.id ? "..." : "Просмотр"}
+                  </button>
+                  <button
+                    onClick={() => downloadPdf(doc)}
+                    disabled={downloading === doc.id}
+                    className="text-xs bg-gray-100 hover:bg-gray-200 disabled:opacity-50 text-gray-700 font-medium px-3 py-2 rounded-lg transition"
+                  >
+                    Скачать
+                  </button>
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* PDF Preview Modal */}
+      {previewUrl && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-4xl h-[85vh] flex flex-col overflow-hidden shadow-2xl">
+            <div className="flex items-center justify-between px-5 py-3 border-b">
+              <h3 className="font-semibold text-gray-900 text-sm truncate">{previewTitle}</h3>
+              <div className="flex items-center gap-2">
+                <a
+                  href={previewUrl}
+                  download={`${previewTitle}.pdf`}
+                  className="text-xs bg-blue-600 hover:bg-blue-700 text-white font-medium px-3 py-1.5 rounded-lg transition"
+                >
+                  Скачать
+                </a>
+                <button
+                  onClick={closePreview}
+                  className="text-gray-400 hover:text-gray-700 text-xl font-bold px-2 transition"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+            <iframe
+              src={previewUrl}
+              className="flex-1 w-full"
+              title="PDF Preview"
+            />
           </div>
         </div>
       )}
