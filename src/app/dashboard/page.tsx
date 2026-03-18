@@ -92,19 +92,31 @@ export default async function DashboardPage() {
             <h2 className="font-semibold text-gray-900">Последние документы</h2>
           </div>
           <div className="divide-y divide-gray-50">
-            {recentDocs.map((doc) => (
-              <div key={doc.id} className="px-5 py-3 flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-gray-900 text-sm">
-                    {doc.type === "AVR" ? "АВР" : doc.type === "ESF" ? "ЭСФ" : "Счет"} №{doc.number} — {doc.client.name}
-                  </p>
-                  <p className="text-xs text-gray-500">{doc.serviceName}</p>
+            {recentDocs.map((doc) => {
+              const repeatUrl = doc.type !== "ESF"
+                ? `/dashboard/documents/new?type=${doc.type === "INVOICE" ? "invoice" : "avr"}&clientId=${doc.clientId}&service=${encodeURIComponent(doc.serviceName)}&qty=${doc.quantity}&price=${doc.price}${doc.contractNumber ? `&contract=${encodeURIComponent(doc.contractNumber)}` : ""}`
+                : null;
+              return (
+                <div key={doc.id} className="px-5 py-3 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-medium text-gray-900 text-sm truncate">
+                      {doc.type === "AVR" ? "АВР" : doc.type === "ESF" ? "ЭСФ" : "Счет"} №{doc.number} — {doc.client.name}
+                    </p>
+                    <p className="text-xs text-gray-500 truncate">{doc.serviceName}</p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <p className="font-semibold text-gray-900 text-sm">
+                      {Number(doc.total).toLocaleString("ru-KZ")} тг
+                    </p>
+                    {repeatUrl && (
+                      <Link href={repeatUrl} className="text-xs text-blue-600 hover:text-blue-800 font-medium" title="Создать такой же">
+                        ⧉
+                      </Link>
+                    )}
+                  </div>
                 </div>
-                <p className="font-semibold text-gray-900 text-sm">
-                  {Number(doc.total).toLocaleString("ru-KZ")} тг
-                </p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

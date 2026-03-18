@@ -13,6 +13,8 @@ interface Client {
   address?: string;
   directorName?: string;
   phone?: string;
+  _docCount?: number;
+  _totalSum?: number;
 }
 
 interface ParsedData {
@@ -241,11 +243,19 @@ export default function ClientsPage() {
                   onClick={() => setExpandedId(expandedId === client.id ? null : client.id)}
                   className="w-full px-5 py-4 flex items-center justify-between hover:bg-gray-50 transition text-left"
                 >
-                  <div>
-                    <p className="font-medium text-gray-900">{client.name}</p>
+                  <div className="min-w-0">
+                    <p className="font-medium text-gray-900 truncate">{client.name}</p>
                     <p className="text-sm text-gray-500">БИН: {client.bin}</p>
                   </div>
-                  <span className="text-gray-400 text-sm">{expandedId === client.id ? "▲" : "▼"}</span>
+                  <div className="flex items-center gap-3 shrink-0">
+                    {(client._docCount ?? 0) > 0 && (
+                      <div className="text-right hidden sm:block">
+                        <p className="text-xs font-medium text-gray-900">{client._totalSum?.toLocaleString("ru-KZ")} тг</p>
+                        <p className="text-xs text-gray-400">{client._docCount} док.</p>
+                      </div>
+                    )}
+                    <span className="text-gray-400 text-sm">{expandedId === client.id ? "▲" : "▼"}</span>
+                  </div>
                 </button>
                 {expandedId === client.id && (
                   <div className="px-5 pb-4 space-y-2 border-t border-gray-100 pt-3 bg-gray-50">

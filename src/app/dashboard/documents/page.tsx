@@ -140,12 +140,31 @@ export default function DocumentsPage() {
           <h1 className="text-2xl font-bold text-gray-900">Мои документы</h1>
           <p className="text-gray-500 mt-1">Все созданные документы</p>
         </div>
-        <Link
-          href="/dashboard/documents/new"
-          className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2.5 rounded-xl text-sm transition"
-        >
-          + Создать
-        </Link>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={async () => {
+              const url = filter !== "ALL" ? `/api/documents/export?type=${filter}` : "/api/documents/export";
+              const res = await fetch(url);
+              if (!res.ok) { toast.error("Ошибка экспорта"); return; }
+              const blob = await res.blob();
+              const a = document.createElement("a");
+              a.href = URL.createObjectURL(blob);
+              a.download = `esep-documents-${new Date().toISOString().split("T")[0]}.xlsx`;
+              a.click();
+              URL.revokeObjectURL(a.href);
+              toast.success("Excel скачан!");
+            }}
+            className="bg-green-600 hover:bg-green-700 text-white font-medium px-4 py-2.5 rounded-xl text-sm transition hidden sm:block"
+          >
+            Excel
+          </button>
+          <Link
+            href="/dashboard/documents/new"
+            className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2.5 rounded-xl text-sm transition"
+          >
+            + Создать
+          </Link>
+        </div>
       </div>
 
       {loading ? (

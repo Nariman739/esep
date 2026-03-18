@@ -8,8 +8,21 @@ export async function GET() {
     const clients = await prisma.client.findMany({
       where: { userId: user.id },
       orderBy: { createdAt: "desc" },
+      include: {
+        documents: {
+          select: { total: true },
+        },
+      },
     });
-    return NextResponse.json(clients);
+
+    const result = clients.map((c) => ({
+      ...c,
+      _docCount: c.documents.length,
+      _totalSum: c.documents.reduce((sum, d) => sum + Number(d.total), 0),
+      documents: undefined,
+    }));
+
+    return NextResponse.json(result);
   } catch {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
