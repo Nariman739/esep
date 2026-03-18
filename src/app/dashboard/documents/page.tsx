@@ -26,12 +26,16 @@ const TYPE_COLOR: Record<Doc["type"], string> = {
   ESF: "bg-purple-100 text-purple-700",
 };
 
+type FilterType = "ALL" | "INVOICE" | "AVR" | "ESF";
+
 export default function DocumentsPage() {
   const [docs, setDocs] = useState<Doc[]>([]);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewTitle, setPreviewTitle] = useState("");
+  const [filter, setFilter] = useState<FilterType>("ALL");
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     fetch("/api/documents")
@@ -120,9 +124,55 @@ export default function DocumentsPage() {
           </Link>
         </div>
       ) : (
+        <>
+        {/* Filters + Search */}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex gap-1.5">
+            {(["ALL", "INVOICE", "AVR", "ESF"] as FilterType[]).map((f) => {
+              const count = f === "ALL" ? docs.length : docs.filter(d => d.type === f).length;
+              const label = f === "ALL" ? "Все" : TYPE_LABEL[f as Doc["type"]];
+              return (
+                <button
+                  key={f}
+                  onClick={() => setFilter(f)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+                    filter === f ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  }`}
+                >
+                  {label} ({count})
+                </button>
+              );
+            })}
+          </div>
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Поиск по клиенту или услуге..."
+            className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
         <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+          {docs.filter((doc) => {
+            if (filter !== "ALL" && doc.type !== filter) return false;
+            if (search) {
+              const q = search.toLowerCase();
+              return doc.client.name.toLowerCase().includes(q) || doc.serviceName.toLowerCase().includes(q);
+            }
+            return true;
+          }).length === 0 ? (
+            <div className="text-center py-8 text-gray-400 text-sm">Ничего не найдено</div>
+          ) : (
           <div className="divide-y divide-gray-100">
-            {docs.map((doc) => (
+            {docs.filter((doc) => {
+              if (filter !== "ALL" && doc.type !== filter) return false;
+              if (search) {
+                const q = search.toLowerCase();
+                return doc.client.name.toLowerCase().includes(q) || doc.serviceName.toLowerCase().includes(q);
+              }
+              return true;
+            }).map((doc) => (
               <div key={doc.id} className="px-5 py-4 flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3 min-w-0">
                   <span className={`text-xs font-semibold px-2 py-1 rounded-lg shrink-0 ${TYPE_COLOR[doc.type]}`}>
@@ -158,7 +208,9 @@ export default function DocumentsPage() {
               </div>
             ))}
           </div>
+          )}
         </div>
+        </>
       )}
 
       {/* PDF Preview Modal */}
