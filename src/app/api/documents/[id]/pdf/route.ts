@@ -15,7 +15,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
     const doc = await prisma.document.findFirst({
       where: { id, userId: user.id },
-      include: { client: true },
+      include: { client: true, items: true },
     });
     if (!doc) return NextResponse.json({ error: "Документ не найден" }, { status: 404 });
 
@@ -40,6 +40,10 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       address: doc.client.address || "",
       directorName: doc.client.directorName || "",
     };
+    const multiItems = doc.items && doc.items.length > 1
+      ? doc.items.map((it) => ({ name: it.name, unit: it.unit, quantity: Number(it.quantity), price: Number(it.price), total: Number(it.total) }))
+      : undefined;
+
     const pdfData = {
       number: doc.number,
       date: doc.date,
@@ -50,6 +54,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       quantity: Number(doc.quantity),
       price: Number(doc.price),
       total: Number(doc.total),
+      multiItems,
       contractNumber: doc.contractNumber,
       contractDate: doc.contractDate,
     };
@@ -68,7 +73,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
         turnoverDate: doc.date,
         seller: { iin: seller.iin, name: seller.name, address: seller.address, kbe: seller.kbe, iban: seller.iban, bik: seller.bik, bankName: seller.bankName },
         buyer: { iin: buyer.bin, name: buyer.name, address: buyer.address, kbe: buyer.kbe, iban: buyer.iban, bik: buyer.bik, bankName: buyer.bankName },
-        items: [{ name: doc.serviceName, unit: doc.unit, qty: Number(doc.quantity), price: Number(doc.price), total: Number(doc.total) }],
+        items: doc.items && doc.items.length > 0
+          ? doc.items.map((it) => ({ name: it.name, unit: it.unit, qty: Number(it.quantity), price: Number(it.price), total: Number(it.total) }))
+          : [{ name: doc.serviceName, unit: doc.unit, qty: Number(doc.quantity), price: Number(doc.price), total: Number(doc.total) }],
         totalSum: Number(doc.total),
         hasContract: !!doc.contractNumber,
         contractNumber: doc.contractNumber || undefined,

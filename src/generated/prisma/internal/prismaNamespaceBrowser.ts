@@ -54,7 +54,8 @@ export const ModelName = {
   User: 'User',
   Session: 'Session',
   Client: 'Client',
-  Document: 'Document'
+  Document: 'Document',
+  DocumentItem: 'DocumentItem'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -145,6 +146,19 @@ export const DocumentScalarFieldEnum = {
 } as const
 
 export type DocumentScalarFieldEnum = (typeof DocumentScalarFieldEnum)[keyof typeof DocumentScalarFieldEnum]
+
+
+export const DocumentItemScalarFieldEnum = {
+  id: 'id',
+  documentId: 'documentId',
+  name: 'name',
+  unit: 'unit',
+  quantity: 'quantity',
+  price: 'price',
+  total: 'total'
+} as const
+
+export type DocumentItemScalarFieldEnum = (typeof DocumentItemScalarFieldEnum)[keyof typeof DocumentItemScalarFieldEnum]
 
 
 export const SortOrder = {

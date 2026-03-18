@@ -75,6 +75,14 @@ interface Party {
   phone?: string;
 }
 
+interface InvoiceItem {
+  name: string;
+  unit?: string;
+  quantity: number;
+  price: number;
+  total: number;
+}
+
 interface InvoiceData {
   number: number;
   date: Date;
@@ -85,12 +93,17 @@ interface InvoiceData {
   quantity: number;
   price: number;
   total: number;
+  multiItems?: InvoiceItem[];
   contractNumber?: string | null;
   contractDate?: Date | null;
 }
 
 export function InvoicePDF({ data }: { data: InvoiceData }) {
-  const { number, date, seller, buyer, serviceName, unit, quantity, price, total } = data;
+  const { number, date, seller, buyer, total } = data;
+
+  const items: InvoiceItem[] = data.multiItems && data.multiItems.length > 0
+    ? data.multiItems
+    : [{ name: data.serviceName, unit: data.unit, quantity: data.quantity, price: data.price, total: data.total }];
 
   const sellerLine = `БИН / ИИН ${seller.iin}, ${seller.name}${seller.address ? `, ${seller.address}` : ""}`;
   const buyerLine = `БИН / ИИН ${buyer.bin}, ${buyer.name}${buyer.address ? `, ${buyer.address}` : ""}`;
@@ -167,15 +180,17 @@ export function InvoicePDF({ data }: { data: InvoiceData }) {
             <Text style={[s.th, s.colPrice]}>Цена</Text>
             <Text style={[{ ...s.th, borderRightWidth: 0 }, s.colSum]}>Сумма</Text>
           </View>
-          <View style={s.tableRowLast}>
-            <Text style={[s.td, s.colN, { textAlign: "center" }]}>1</Text>
-            <Text style={[s.td, s.colCode]}></Text>
-            <Text style={[s.td, s.colName]}>{serviceName}</Text>
-            <Text style={[s.td, s.colQty, { textAlign: "center" }]}>{quantity}</Text>
-            <Text style={[s.td, s.colUnit, { textAlign: "center" }]}>{unit}</Text>
-            <Text style={[s.td, s.colPrice, { textAlign: "right" }]}>{formatMoney(price)}</Text>
-            <Text style={[s.tdLast, s.colSum, { textAlign: "right" }]}>{formatMoney(total)}</Text>
-          </View>
+          {items.map((item, i) => (
+            <View key={i} style={i === items.length - 1 ? s.tableRowLast : s.tableRow}>
+              <Text style={[s.td, s.colN, { textAlign: "center" }]}>{i + 1}</Text>
+              <Text style={[s.td, s.colCode]}></Text>
+              <Text style={[s.td, s.colName]}>{item.name}</Text>
+              <Text style={[s.td, s.colQty, { textAlign: "center" }]}>{item.quantity}</Text>
+              <Text style={[s.td, s.colUnit, { textAlign: "center" }]}>{item.unit || "услуга"}</Text>
+              <Text style={[s.td, s.colPrice, { textAlign: "right" }]}>{formatMoney(item.price)}</Text>
+              <Text style={[s.tdLast, s.colSum, { textAlign: "right" }]}>{formatMoney(item.total)}</Text>
+            </View>
+          ))}
         </View>
 
         {/* Итоги */}
@@ -192,7 +207,7 @@ export function InvoicePDF({ data }: { data: InvoiceData }) {
 
         {/* Прописью */}
         <Text style={{ marginTop: 6, fontSize: 9 }}>
-          Всего наименований 1, на сумму {formatMoney(total)} KZT
+          Всего наименований {items.length}, на сумму {formatMoney(total)} KZT
         </Text>
         <Text style={{ fontWeight: 700, fontSize: 9, marginTop: 2 }}>
           Всего к оплате: {amountInWords(total)}

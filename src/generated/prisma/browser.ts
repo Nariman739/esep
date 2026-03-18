@@ -37,3 +37,8 @@ export type Client = Prisma.ClientModel
  * 
  */
 export type Document = Prisma.DocumentModel
+/**
+ * Model DocumentItem
+ * 
+ */
+export type DocumentItem = Prisma.DocumentItemModel

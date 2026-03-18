@@ -9,7 +9,15 @@ interface Client {
   bin: string;
 }
 
+interface Item {
+  name: string;
+  quantity: string;
+  price: string;
+}
+
 type DocType = "invoice" | "avr";
+
+const emptyItem = (): Item => ({ name: "", quantity: "1", price: "" });
 
 export default function NewDocumentPage() {
   const searchParams = useSearchParams();
@@ -18,34 +26,69 @@ export default function NewDocumentPage() {
   const [docType, setDocType] = useState<DocType>(
     (searchParams.get("type") as DocType) || "invoice"
   );
-  const [form, setForm] = useState({
-    clientId: searchParams.get("clientId") || "",
-    serviceName: searchParams.get("service") || "",
-    quantity: searchParams.get("qty") || "1",
-    price: searchParams.get("price") || "",
-    contractNumber: searchParams.get("contract") || "",
-    contractDate: searchParams.get("contractDate") || "",
-    date: new Date().toISOString().split("T")[0],
-  });
+  const [clientId, setClientId] = useState(searchParams.get("clientId") || "");
+  const [items, setItems] = useState<Item[]>([
+    {
+      name: searchParams.get("service") || "",
+      quantity: searchParams.get("qty") || "1",
+      price: searchParams.get("price") || "",
+    },
+  ]);
+  const [contractNumber, setContractNumber] = useState(searchParams.get("contract") || "");
+  const [contractDate, setContractDate] = useState(searchParams.get("contractDate") || "");
+  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
 
   useEffect(() => {
     fetch("/api/clients").then((r) => r.json()).then(setClients);
   }, []);
 
-  const total = Number(form.quantity || 1) * Number(form.price || 0);
+  function updateItem(index: number, field: keyof Item, value: string) {
+    setItems(items.map((item, i) => (i === index ? { ...item, [field]: value } : item)));
+  }
+
+  function addItem() {
+    setItems([...items, emptyItem()]);
+  }
+
+  function removeItem(index: number) {
+    if (items.length <= 1) return;
+    setItems(items.filter((_, i) => i !== index));
+  }
+
+  const itemTotals = items.map((it) => Number(it.quantity || 1) * Number(it.price || 0));
+  const grandTotal = itemTotals.reduce((sum, t) => sum + t, 0);
 
   async function handleCreate() {
-    if (!form.clientId) { toast.error("Выберите клиента"); return; }
-    if (!form.serviceName) { toast.error("Укажите название услуги"); return; }
-    if (!form.price || Number(form.price) <= 0) { toast.error("Укажите сумму"); return; }
+    if (!clientId) { toast.error("Выберите клиента"); return; }
+    const validItems = items.filter((it) => it.name && Number(it.price) > 0);
+    if (validItems.length === 0) { toast.error("Добавьте хотя бы одну услугу"); return; }
 
     setLoading(true);
     try {
       const endpoint = docType === "invoice" ? "/api/documents/invoice" : "/api/documents/avr";
+      const body = {
+        clientId,
+        contractNumber,
+        contractDate,
+        date,
+        // Backwards compat: first item as main fields
+        serviceName: validItems.map((it) => it.name).join(", "),
+        quantity: validItems.length === 1 ? Number(validItems[0].quantity || 1) : 1,
+        price: validItems.length === 1 ? Number(validItems[0].price) : grandTotal,
+        // New: items array
+        items: validItems.map((it) => ({
+          name: it.name,
+          unit: "услуга",
+          quantity: Number(it.quantity || 1),
+          price: Number(it.price),
+          total: Number(it.quantity || 1) * Number(it.price),
+        })),
+      };
+
       const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(body),
       });
 
       if (!res.ok) {
@@ -119,8 +162,8 @@ export default function NewDocumentPage() {
             </div>
           ) : (
             <select
-              value={form.clientId}
-              onChange={(e) => setForm({ ...form, clientId: e.target.value })}
+              value={clientId}
+              onChange={(e) => setClientId(e.target.value)}
               className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
             >
               <option value="">Выберите клиента...</option>
@@ -131,49 +174,68 @@ export default function NewDocumentPage() {
           )}
         </div>
 
-        {/* Услуга */}
+        {/* Услуги / Работы */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            {isInvoice ? "Название услуги" : "Наименование работ (услуг)"} *
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            {isInvoice ? "Услуги" : "Работы / услуги"} *
           </label>
-          <input
-            type="text"
-            value={form.serviceName}
-            onChange={(e) => setForm({ ...form, serviceName: e.target.value })}
-            placeholder="Разработка сайта / Монтаж натяжных потолков / Консультация"
-            className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+          <div className="space-y-3">
+            {items.map((item, i) => (
+              <div key={i} className="border border-gray-200 rounded-xl p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gray-400 font-medium">Позиция {i + 1}</span>
+                  {items.length > 1 && (
+                    <button
+                      onClick={() => removeItem(i)}
+                      className="text-xs text-red-400 hover:text-red-600 transition"
+                    >
+                      Удалить
+                    </button>
+                  )}
+                </div>
+                <input
+                  type="text"
+                  value={item.name}
+                  onChange={(e) => updateItem(i, "name", e.target.value)}
+                  placeholder="Название услуги / работы"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <div className="grid grid-cols-3 gap-2">
+                  <input
+                    type="number"
+                    min="1"
+                    value={item.quantity}
+                    onChange={(e) => updateItem(i, "quantity", e.target.value)}
+                    placeholder="Кол-во"
+                    className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <input
+                    type="number"
+                    min="0"
+                    value={item.price}
+                    onChange={(e) => updateItem(i, "price", e.target.value)}
+                    placeholder="Цена (тг)"
+                    className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <div className="flex items-center justify-end text-sm font-medium text-gray-700">
+                    {itemTotals[i] > 0 ? `${itemTotals[i].toLocaleString("ru-KZ")} тг` : ""}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <button
+            onClick={addItem}
+            className="mt-2 text-sm text-blue-600 hover:text-blue-800 font-medium transition"
+          >
+            + Добавить ещё услугу
+          </button>
         </div>
 
-        {/* Сумма */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Количество</label>
-            <input
-              type="number"
-              min="1"
-              value={form.quantity}
-              onChange={(e) => setForm({ ...form, quantity: e.target.value })}
-              className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Цена (тенге) *</label>
-            <input
-              type="number"
-              min="0"
-              value={form.price}
-              onChange={(e) => setForm({ ...form, price: e.target.value })}
-              placeholder="150000"
-              className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-        </div>
-
-        {total > 0 && (
+        {grandTotal > 0 && (
           <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-sm">
             <span className="text-green-700">Итого: </span>
-            <span className="font-bold text-green-900 text-base">{total.toLocaleString("ru-KZ")} тг</span>
+            <span className="font-bold text-green-900 text-base">{grandTotal.toLocaleString("ru-KZ")} тг</span>
           </div>
         )}
 
@@ -185,15 +247,15 @@ export default function NewDocumentPage() {
           <div className="grid grid-cols-2 gap-3">
             <input
               type="text"
-              value={form.contractNumber}
-              onChange={(e) => setForm({ ...form, contractNumber: e.target.value })}
+              value={contractNumber}
+              onChange={(e) => setContractNumber(e.target.value)}
               placeholder="Номер договора"
               className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <input
               type="date"
-              value={form.contractDate}
-              onChange={(e) => setForm({ ...form, contractDate: e.target.value })}
+              value={contractDate}
+              onChange={(e) => setContractDate(e.target.value)}
               className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -205,8 +267,8 @@ export default function NewDocumentPage() {
           </label>
           <input
             type="date"
-            value={form.date}
-            onChange={(e) => setForm({ ...form, date: e.target.value })}
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
             className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>

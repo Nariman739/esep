@@ -90,8 +90,22 @@ model Document {
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   client Client @relation(fields: [clientId], references: [id])
+  items  DocumentItem[]
 
   @@unique([userId, type, number])
+}
+
+model DocumentItem {
+  id         String @id @default(uuid())
+  documentId String
+
+  name     String
+  unit     String  @default("услуга")
+  quantity Decimal @default(1)
+  price    Decimal
+  total    Decimal
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
 }
 
 enum DocumentType {

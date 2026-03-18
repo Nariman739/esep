@@ -101,6 +101,14 @@ interface Party {
   kbe?: string;
 }
 
+interface AvrItem {
+  name: string;
+  unit?: string;
+  quantity: number;
+  price: number;
+  total: number;
+}
+
 interface AvrData {
   number: number;
   date: Date;
@@ -111,12 +119,18 @@ interface AvrData {
   quantity: number;
   price: number;
   total: number;
+  multiItems?: AvrItem[];
   contractNumber?: string | null;
   contractDate?: Date | null;
 }
 
 export function AvrPDF({ data }: { data: AvrData }) {
-  const { number, date, seller, buyer, serviceName, unit, quantity, price, total } = data;
+  const { number, date, seller, buyer, total } = data;
+
+  // Build items list: multi or single
+  const items: AvrItem[] = data.multiItems && data.multiItems.length > 0
+    ? data.multiItems
+    : [{ name: data.serviceName, unit: data.unit, quantity: data.quantity, price: data.price, total: data.total }];
 
   const sellerBank = [seller.bankName, seller.iban ? `ИИК ${seller.iban}` : null, seller.bik ? `БИК ${seller.bik}` : null, seller.kbe ? `КБЕ ${seller.kbe}` : null].filter(Boolean).join(", ");
   const sellerInfo = `${seller.name}${seller.address ? `, ${seller.address}` : ""}${seller.phone ? `, тел: ${seller.phone}` : ""}${sellerBank ? `\n${sellerBank}` : ""}`;
@@ -214,17 +228,19 @@ export function AvrPDF({ data }: { data: AvrData }) {
             <Text style={[s.thLast, s.colSum]}>8</Text>
           </View>
 
-          {/* Строка с данными */}
-          <View style={s.workRowLast}>
-            <Text style={[s.tdCenter, s.colNum]}>1</Text>
-            <Text style={[s.td, s.colName]}>{serviceName}</Text>
-            <Text style={[s.tdCenter, s.colDate]}>{formatDateFull(new Date(date))}</Text>
-            <Text style={[s.tdCenter, s.colInfo]}></Text>
-            <Text style={[s.tdCenter, s.colUnit]}>{unit}</Text>
-            <Text style={[s.tdCenter, s.colQty]}>{quantity}</Text>
-            <Text style={[s.tdRight, s.colPrice]}>{formatMoney(price)}</Text>
-            <Text style={[s.tdRightLast, s.colSum]}>{formatMoney(total)}</Text>
-          </View>
+          {/* Строки с данными */}
+          {items.map((item, i) => (
+            <View key={i} style={i === items.length - 1 ? s.workRowLast : s.workRow}>
+              <Text style={[s.tdCenter, s.colNum]}>{i + 1}</Text>
+              <Text style={[s.td, s.colName]}>{item.name}</Text>
+              <Text style={[s.tdCenter, s.colDate]}>{formatDateFull(new Date(date))}</Text>
+              <Text style={[s.tdCenter, s.colInfo]}></Text>
+              <Text style={[s.tdCenter, s.colUnit]}>{item.unit || "услуга"}</Text>
+              <Text style={[s.tdCenter, s.colQty]}>{item.quantity}</Text>
+              <Text style={[s.tdRight, s.colPrice]}>{formatMoney(item.price)}</Text>
+              <Text style={[s.tdRightLast, s.colSum]}>{formatMoney(item.total)}</Text>
+            </View>
+          ))}
         </View>
 
         {/* Итого */}
@@ -233,7 +249,7 @@ export function AvrPDF({ data }: { data: AvrData }) {
             <Text>Итого</Text>
           </View>
           <View style={[{ width: 45, padding: "3 4", borderRightWidth: 1, borderColor: "#000", textAlign: "center" }]}>
-            <Text>{quantity}</Text>
+            <Text>{items.reduce((s, it) => s + Number(it.quantity), 0)}</Text>
           </View>
           <View style={[{ width: 65, padding: "3 4", borderRightWidth: 1, borderColor: "#000", textAlign: "right" }]}>
             <Text>x</Text>

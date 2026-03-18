@@ -5,14 +5,22 @@ import { renderToBuffer } from "@react-pdf/renderer";
 import { InvoicePDF } from "@/lib/pdf/invoice";
 import { createElement } from "react";
 
+interface ItemInput {
+  name: string;
+  unit?: string;
+  quantity: number;
+  price: number;
+  total: number;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const user = await requireAuth();
     const body = await req.json();
 
-    const { clientId, serviceName, quantity, price, contractNumber, contractDate, date } = body;
+    const { clientId, serviceName, quantity, price, contractNumber, contractDate, date, items } = body;
 
-    if (!clientId || !serviceName || !price) {
+    if (!clientId || (!serviceName && (!items || items.length === 0))) {
       return NextResponse.json({ error: "Заполните все поля" }, { status: 400 });
     }
 
@@ -21,14 +29,17 @@ export async function POST(req: NextRequest) {
     });
     if (!client) return NextResponse.json({ error: "Клиент не найден" }, { status: 404 });
 
-    // Get next document number
     const lastDoc = await prisma.document.findFirst({
       where: { userId: user.id, type: "INVOICE" },
       orderBy: { number: "desc" },
     });
     const number = (lastDoc?.number ?? 0) + 1;
 
-    const total = Number(quantity || 1) * Number(price);
+    const itemsList: ItemInput[] = items && items.length > 0
+      ? items
+      : [{ name: serviceName, unit: "услуга", quantity: Number(quantity || 1), price: Number(price), total: Number(quantity || 1) * Number(price) }];
+
+    const total = itemsList.reduce((sum: number, it: ItemInput) => sum + it.total, 0);
 
     const document = await prisma.document.create({
       data: {
@@ -36,14 +47,23 @@ export async function POST(req: NextRequest) {
         clientId,
         type: "INVOICE",
         number,
-        serviceName,
+        serviceName: itemsList.map((it: ItemInput) => it.name).join(", "),
         unit: "услуга",
-        quantity: Number(quantity || 1),
-        price: Number(price),
+        quantity: itemsList.length === 1 ? itemsList[0].quantity : 1,
+        price: itemsList.length === 1 ? itemsList[0].price : total,
         total,
         contractNumber: contractNumber || null,
         contractDate: contractDate ? new Date(contractDate) : null,
         date: date ? new Date(date) : new Date(),
+        items: {
+          create: itemsList.map((it: ItemInput) => ({
+            name: it.name,
+            unit: it.unit || "услуга",
+            quantity: it.quantity,
+            price: it.price,
+            total: it.total,
+          })),
+        },
       },
     });
 
@@ -71,11 +91,12 @@ export async function POST(req: NextRequest) {
         address: client.address || "",
         directorName: client.directorName || "",
       },
-      serviceName,
+      serviceName: itemsList[0].name,
       unit: "услуга",
-      quantity: Number(quantity || 1),
-      price: Number(price),
+      quantity: itemsList[0].quantity,
+      price: itemsList[0].price,
       total,
+      multiItems: itemsList.length > 1 ? itemsList : undefined,
       contractNumber: contractNumber || null,
       contractDate: contractDate ? new Date(contractDate) : null,
     };
@@ -91,6 +112,7 @@ export async function POST(req: NextRequest) {
     });
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ error: "Ошибка генерации PDF" }, { status: 500 });
+    const message = err instanceof Error ? err.message : "Неизвестная ошибка";
+    return NextResponse.json({ error: `Ошибка генерации счёта: ${message}` }, { status: 500 });
   }
 }

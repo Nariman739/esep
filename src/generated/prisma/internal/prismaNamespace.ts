@@ -387,7 +387,8 @@ export const ModelName = {
   User: 'User',
   Session: 'Session',
   Client: 'Client',
-  Document: 'Document'
+  Document: 'Document',
+  DocumentItem: 'DocumentItem'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -403,7 +404,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "session" | "client" | "document"
+    modelProps: "user" | "session" | "client" | "document" | "documentItem"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -703,6 +704,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    DocumentItem: {
+      payload: Prisma.$DocumentItemPayload<ExtArgs>
+      fields: Prisma.DocumentItemFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.DocumentItemFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DocumentItemPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.DocumentItemFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DocumentItemPayload>
+        }
+        findFirst: {
+          args: Prisma.DocumentItemFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DocumentItemPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.DocumentItemFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DocumentItemPayload>
+        }
+        findMany: {
+          args: Prisma.DocumentItemFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DocumentItemPayload>[]
+        }
+        create: {
+          args: Prisma.DocumentItemCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DocumentItemPayload>
+        }
+        createMany: {
+          args: Prisma.DocumentItemCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.DocumentItemCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DocumentItemPayload>[]
+        }
+        delete: {
+          args: Prisma.DocumentItemDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DocumentItemPayload>
+        }
+        update: {
+          args: Prisma.DocumentItemUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DocumentItemPayload>
+        }
+        deleteMany: {
+          args: Prisma.DocumentItemDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.DocumentItemUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.DocumentItemUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DocumentItemPayload>[]
+        }
+        upsert: {
+          args: Prisma.DocumentItemUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DocumentItemPayload>
+        }
+        aggregate: {
+          args: Prisma.DocumentItemAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateDocumentItem>
+        }
+        groupBy: {
+          args: Prisma.DocumentItemGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.DocumentItemGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.DocumentItemCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.DocumentItemCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -814,6 +889,19 @@ export const DocumentScalarFieldEnum = {
 } as const
 
 export type DocumentScalarFieldEnum = (typeof DocumentScalarFieldEnum)[keyof typeof DocumentScalarFieldEnum]
+
+
+export const DocumentItemScalarFieldEnum = {
+  id: 'id',
+  documentId: 'documentId',
+  name: 'name',
+  unit: 'unit',
+  quantity: 'quantity',
+  price: 'price',
+  total: 'total'
+} as const
+
+export type DocumentItemScalarFieldEnum = (typeof DocumentItemScalarFieldEnum)[keyof typeof DocumentItemScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -1035,6 +1123,7 @@ export type GlobalOmitConfig = {
   session?: Prisma.SessionOmit
   client?: Prisma.ClientOmit
   document?: Prisma.DocumentOmit
+  documentItem?: Prisma.DocumentItemOmit
 }
 
 /* Types for Logging */
