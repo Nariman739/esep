@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 
 interface Client {
@@ -11,16 +12,19 @@ interface Client {
 type DocType = "invoice" | "avr";
 
 export default function NewDocumentPage() {
+  const searchParams = useSearchParams();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(false);
-  const [docType, setDocType] = useState<DocType>("invoice");
+  const [docType, setDocType] = useState<DocType>(
+    (searchParams.get("type") as DocType) || "invoice"
+  );
   const [form, setForm] = useState({
-    clientId: "",
-    serviceName: "",
-    quantity: "1",
-    price: "",
-    contractNumber: "",
-    contractDate: "",
+    clientId: searchParams.get("clientId") || "",
+    serviceName: searchParams.get("service") || "",
+    quantity: searchParams.get("qty") || "1",
+    price: searchParams.get("price") || "",
+    contractNumber: searchParams.get("contract") || "",
+    contractDate: searchParams.get("contractDate") || "",
     date: new Date().toISOString().split("T")[0],
   });
 

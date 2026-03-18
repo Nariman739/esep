@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import Link from "next/link";
 
@@ -8,10 +9,15 @@ interface Doc {
   type: "INVOICE" | "AVR" | "ESF";
   number: number;
   serviceName: string;
+  quantity: number;
+  price: string;
   total: string;
   date: string;
   createdAt: string;
+  clientId: string;
   client: { name: string; bin: string };
+  contractNumber?: string;
+  contractDate?: string;
 }
 
 const TYPE_LABEL: Record<Doc["type"], string> = {
@@ -94,6 +100,34 @@ export default function DocumentsPage() {
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(null);
     setPreviewTitle("");
+  }
+
+  const router = useRouter();
+
+  function duplicateDoc(doc: Doc) {
+    const type = doc.type === "INVOICE" ? "invoice" : "avr";
+    const params = new URLSearchParams({
+      type,
+      clientId: doc.clientId,
+      service: doc.serviceName,
+      qty: String(doc.quantity || 1),
+      price: String(doc.price),
+    });
+    if (doc.contractNumber) params.set("contract", doc.contractNumber);
+    if (doc.contractDate) params.set("contractDate", doc.contractDate.split("T")[0]);
+    router.push(`/dashboard/documents/new?${params}`);
+  }
+
+  async function deleteDoc(doc: Doc) {
+    if (!confirm(`Удалить ${TYPE_LABEL[doc.type]} №${doc.number}?`)) return;
+    try {
+      const res = await fetch(`/api/documents/${doc.id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      setDocs(docs.filter((d) => d.id !== doc.id));
+      toast.success("Документ удалён");
+    } catch {
+      toast.error("Не удалось удалить");
+    }
   }
 
   const formatDate = (d: string) =>
@@ -203,6 +237,22 @@ export default function DocumentsPage() {
                     className="text-xs bg-gray-100 hover:bg-gray-200 disabled:opacity-50 text-gray-700 font-medium px-3 py-2 rounded-lg transition"
                   >
                     Скачать
+                  </button>
+                  {doc.type !== "ESF" && (
+                    <button
+                      onClick={() => duplicateDoc(doc)}
+                      className="text-xs text-gray-400 hover:text-blue-600 font-medium px-1 py-2 transition"
+                      title="Дублировать"
+                    >
+                      ⧉
+                    </button>
+                  )}
+                  <button
+                    onClick={() => deleteDoc(doc)}
+                    className="text-xs text-red-400 hover:text-red-600 font-medium px-1 py-2 transition"
+                    title="Удалить"
+                  >
+                    ×
                   </button>
                 </div>
               </div>
