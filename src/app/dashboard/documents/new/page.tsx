@@ -56,7 +56,12 @@ export default function NewDocumentPage() {
       a.download = docType === "invoice" ? `schet-${Date.now()}.pdf` : `avr-${Date.now()}.pdf`;
       a.click();
       URL.revokeObjectURL(url);
-      toast.success(docType === "invoice" ? "Счет создан и скачан!" : "АВР создан и скачан!");
+      if (docType === "invoice") {
+        toast.success("Счет создан и скачан!");
+      } else {
+        toast.success("АВР создан и скачан!");
+        toast("Не забудьте: после подписания АВР — 15 дней на выставление ЭСФ!", { duration: 8000 });
+      }
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Ошибка");
     } finally {
@@ -171,15 +176,23 @@ export default function NewDocumentPage() {
         {/* Договор */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Номер договора <span className="text-gray-400 font-normal">(необязательно)</span>
+            Договор <span className="text-gray-400 font-normal">(при наличии укажите номер и дату)</span>
           </label>
-          <input
-            type="text"
-            value={form.contractNumber}
-            onChange={(e) => setForm({ ...form, contractNumber: e.target.value })}
-            placeholder="№ 42"
-            className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+          <div className="grid grid-cols-2 gap-3">
+            <input
+              type="text"
+              value={form.contractNumber}
+              onChange={(e) => setForm({ ...form, contractNumber: e.target.value })}
+              placeholder="Номер договора"
+              className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <input
+              type="date"
+              value={form.contractDate}
+              onChange={(e) => setForm({ ...form, contractDate: e.target.value })}
+              className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
         </div>
 
         <div>

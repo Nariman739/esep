@@ -118,8 +118,9 @@ export default function ProfilePage() {
         <form onSubmit={handleSave} className="space-y-4">
           {field("Ваше ФИО / Название ИП", "fullName", "ИП Жаминов Нариман Ерланович")}
           {field("ИИН", "iin", "123456789012")}
+          <p className="text-xs text-gray-400 -mb-2">Банковские реквизиты можно найти в приложении вашего банка</p>
           {field("Банк", "bankName", "АО «Kaspi Bank»")}
-          {field("ИИК (IBAN)", "iban", "KZ...")}
+          {field("ИИК (IBAN)", "iban", "KZ... (номер банковского счёта)")}
           {field("БИК", "bik", "CASPKZKA")}
           {field("КБе", "kbe", "19 (для ИП) / 17 (для ТОО)")}
           {field("Юридический адрес", "address", "г. Алматы, ул. ...")}

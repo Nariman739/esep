@@ -19,6 +19,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
               <Link href="/dashboard/documents" className="text-gray-600 hover:text-gray-900 font-medium">Документы</Link>
               <Link href="/dashboard/documents/new" className="text-gray-600 hover:text-gray-900 font-medium">Создать</Link>
               <Link href="/dashboard/documents/esf" className="text-gray-600 hover:text-gray-900 font-medium">ЭСФ</Link>
+              <Link href="/dashboard/documents/eavr" className="text-gray-600 hover:text-gray-900 font-medium">Эл. АВР</Link>
               <Link href="/dashboard/profile" className="text-gray-600 hover:text-gray-900 font-medium">Мои реквизиты</Link>
             </div>
           </div>

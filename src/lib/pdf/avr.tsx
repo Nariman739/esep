@@ -22,7 +22,7 @@ const s = StyleSheet.create({
   headerLabelCell: { width: 90, padding: "3 4", borderRightWidth: 1, borderColor: "#000", justifyContent: "center" },
   headerValueCell: { flex: 1, padding: "3 4", borderRightWidth: 1, borderColor: "#000" },
   headerHintCell: { width: 220, padding: "2 4", borderRightWidth: 1, borderColor: "#000" },
-  headerHint: { fontSize: 7, color: "#777", fontStyle: "italic", textAlign: "center" },
+  headerHint: { fontSize: 7, color: "#777", textAlign: "center" },
   headerBinCell: { width: 60, padding: "3 4" },
   headerLabel: { fontWeight: 700 },
 
@@ -68,7 +68,7 @@ const s = StyleSheet.create({
   reserveRow: { flexDirection: "row", borderWidth: 1, borderColor: "#000", marginTop: -1 },
   reserveLabelCell: { flex: 1, padding: "3 4", borderRightWidth: 1, borderColor: "#000" },
   reserveValueCell: { flex: 1, padding: "2 4" },
-  reserveHint: { fontSize: 7, color: "#777", fontStyle: "italic", textAlign: "center" },
+  reserveHint: { fontSize: 7, color: "#777", textAlign: "center" },
 
   appendixRow: { borderWidth: 1, borderColor: "#000", padding: "3 4", marginTop: -1 },
 
@@ -81,7 +81,7 @@ const s = StyleSheet.create({
   signLineLabel: { fontSize: 7, color: "#555", width: 70 },
   signLineValue: { flex: 1, borderBottomWidth: 1, borderColor: "#000", marginLeft: 4, marginBottom: 1 },
   stampRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 8, alignItems: "center" },
-  stampBlock: { flexDirection: "row", alignItems: "center", gap: 8 },
+  stampBlock: { flexDirection: "row", alignItems: "center" },
   stampLabel: { fontWeight: 700, fontSize: 8 },
   dateBlock: { flex: 1, textAlign: "center" },
   dateLabel: { fontSize: 7, color: "#555" },
