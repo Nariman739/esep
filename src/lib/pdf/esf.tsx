@@ -196,12 +196,12 @@ export function EsfPDF({ data }: { data: EsfPdfData }) {
         <View style={s.checkRow}>
           <View style={data.hasContract ? s.cbOn : s.cb}><Text>{data.hasContract ? "v" : " "}</Text></View>
           <Text style={{ fontSize: 7 }}>27.1. Договор (контракт) на поставку товаров, работ, услуг</Text>
-          <Text style={s.hintCol}>{data.hasContract ? "Выберите эту галочку на портале" : ""}</Text>
+          <Text style={s.hintCol}>{data.hasContract ? "Выберите эту галочку на портале, если имеется договор с заказчиком" : ""}</Text>
         </View>
         <View style={s.checkRow}>
           <View style={!data.hasContract ? s.cbOn : s.cb}><Text>{!data.hasContract ? "v" : " "}</Text></View>
           <Text style={{ fontSize: 7 }}>27.2. Без договора (контракта) на поставку товаров, работ, услуг</Text>
-          <Text style={s.hintCol}>{!data.hasContract ? "Выберите эту галочку на портале" : ""}</Text>
+          <Text style={s.hintCol}>{!data.hasContract ? "Выберите эту галочку, если договора нет" : ""}</Text>
         </View>
         {data.hasContract && data.contractNumber && (
           <View style={{ paddingLeft: 24, marginTop: 2 }}>

@@ -41,20 +41,21 @@ const s = StyleSheet.create({
   trL: { fontSize: 6, textAlign: "right", padding: "2 1" },
 
   // G columns (landscape)
-  g1: { width: 20 },   // № п/п
-  g2: { width: 120 },  // Наименование работ
-  g21: { width: 70 },  // Наим. по классиф.
-  g22: { width: 45 },  // Сальный код ТНВЭД
-  g3: { width: 50 },   // Дата выполнения
-  g4: { width: 35 },   // Ед. изм
-  g5: { width: 30 },   // Кол. (единица)
-  g6: { width: 45 },   // Цена (тариф) за ед.
-  g7: { width: 50 },   // Стоимость работ, услуг
-  g8: { width: 45 },   // Размер оборота по реализации
-  g9: { width: 35 },   // НДС Ставка
-  g10: { width: 35 },  // НДС Сумма
-  g11: { width: 50 },  // Стоимость работ с учётом косв. налогов
-  g12: { width: 60 },  // Дополнительные сведения
+  g1: { width: 20 },    // № п/п
+  gCode: { width: 40 }, // Код (ОКЭД)
+  g2: { width: 100 },   // Наименование работ
+  g21: { width: 60 },   // Наим. по классиф.
+  g22: { width: 40 },   // Стоимостный код ТНВЭД
+  g3: { width: 48 },    // Дата выполнения
+  g4: { width: 32 },    // Ед. изм
+  g5: { width: 28 },    // Кол. (единица)
+  g6: { width: 42 },    // Цена (тариф) за ед.
+  g7: { width: 48 },    // Стоимость работ, услуг
+  g8: { width: 42 },    // Размер оборота по реализации
+  g9: { width: 32 },    // НДС Ставка
+  g10: { width: 32 },   // НДС Сумма
+  g11: { width: 48 },   // Стоимость работ с учётом косв. налогов
+  g12: { width: 55 },   // Дополнительные сведения
 
   footer: { marginTop: 6, fontSize: 6, color: "#777", textAlign: "center", borderTopWidth: 0.5, borderColor: "#ccc", paddingTop: 3 },
 });
@@ -122,9 +123,9 @@ export function EavrPDF({ data }: { data: EavrPdfData }) {
         {/* ===== A. Общий раздел ===== */}
         <Text style={s.section}>Раздел A. Общий раздел</Text>
         <F n="1." label="Регистрационный номер" hint="Присвоится автоматически порталом" />
-        <F n="1.1." label="Дата составления (выписки)" value={formatDate(data.date)} hint="Выберите дату" />
+        <F n="1.1." label="Дата составления (выписки)" value={formatDate(data.date)} hint="Ставится порталом автоматически (дата выписки АВР)" />
         <F n="2." label="Номер документа в учетной системе" value={data.avrNumber || data.number} hint="Введите номер" />
-        <F n="3." label="Дата выполнения работ (оказания услуг)" value={formatDate(data.workDate)} hint="Выберите дату" />
+        <F n="3." label="Дата выполнения работ (оказания услуг)" value={formatDate(data.workDate)} hint="Дата фактической сдачи работ" />
         <F n="4." label="Актуальность" hint="Оставьте по умолчанию" />
         <View style={{ paddingLeft: 24, paddingTop: 1 }}>
           <Text style={{ fontSize: 6, color: "#888" }}>Вид АВР: оставьте пустым (обычный АВР, не исправленный и не дополнительный)</Text>
@@ -180,12 +181,12 @@ export function EavrPDF({ data }: { data: EavrPdfData }) {
         <View style={s.checkRow}>
           <View style={data.hasContract ? s.cbOn : s.cb}><Text>{data.hasContract ? "v" : " "}</Text></View>
           <Text style={{ fontSize: 7 }}>22.1. Договор (контракт) на выполнение работ (оказание услуг)</Text>
-          <Text style={s.hintCol}>{data.hasContract ? "Выберите эту галочку" : ""}</Text>
+          <Text style={s.hintCol}>{data.hasContract ? "Выберите эту галочку, если имеется договор с заказчиком" : ""}</Text>
         </View>
         <View style={s.checkRow}>
           <View style={!data.hasContract ? s.cbOn : s.cb}><Text>{!data.hasContract ? "v" : " "}</Text></View>
           <Text style={{ fontSize: 7 }}>22.2. Без договора (контракта) на выполнение работ (оказание услуг)</Text>
-          <Text style={s.hintCol}>{!data.hasContract ? "Выберите эту галочку" : ""}</Text>
+          <Text style={s.hintCol}>{!data.hasContract ? "Выберите эту галочку, если договора нет" : ""}</Text>
         </View>
         {data.hasContract && data.contractNumber && (
           <View style={{ paddingLeft: 24, marginTop: 2 }}>
@@ -247,25 +248,27 @@ export function EavrPDF({ data }: { data: EavrPdfData }) {
         <View style={s.tbl}>
           {/* Header */}
           <View style={s.tHdr}>
-            <Text style={[s.th, s.g1]}>№ п/п</Text>
+            <Text style={[s.th, s.g1]}>М п/п</Text>
+            <Text style={[s.th, s.gCode]}>Код (ОКЭД)</Text>
             <Text style={[s.th, s.g2]}>Наименование работ (услуг)</Text>
-            <Text style={[s.th, s.g21]}>Наим. по классификатору</Text>
-            <Text style={[s.th, s.g22]}>Стоимостный код ТНВЭД</Text>
-            <Text style={[s.th, s.g3]}>Дата выполнения работ (оказания услуг)</Text>
+            <Text style={[s.th, s.g21]}>Наим. по классиф.</Text>
+            <Text style={[s.th, s.g22]}>Стоим. код ТНВЭД</Text>
+            <Text style={[s.th, s.g3]}>Дата выполнения работ</Text>
             <Text style={[s.th, s.g4]}>Ед. изм</Text>
-            <Text style={[s.th, s.g5]}>Кол. (единица)</Text>
-            <Text style={[s.th, s.g6]}>Цена (тариф) за единицу</Text>
+            <Text style={[s.th, s.g5]}>Кол.</Text>
+            <Text style={[s.th, s.g6]}>Цена (тариф) за ед.</Text>
             <Text style={[s.th, s.g7]}>Стоимость работ, услуг</Text>
-            <Text style={[s.th, s.g8]}>Размер оборота по реализации</Text>
+            <Text style={[s.th, s.g8]}>Размер оборота по реализ.</Text>
             <Text style={[s.th, s.g9]}>НДС Ставка</Text>
             <Text style={[s.th, s.g10]}>НДС Сумма</Text>
-            <Text style={[s.th, s.g11]}>Стоимость работ с учётом косв. налогов</Text>
-            <Text style={[s.thL, s.g12]}>Дополнительные сведения</Text>
+            <Text style={[s.th, s.g11]}>Стоимость с учётом косв. налогов</Text>
+            <Text style={[s.thL, s.g12]}>Доп. сведения</Text>
           </View>
 
           {/* Column numbers */}
           <View style={s.tNumRow}>
-            <Text style={[s.tc, s.g1]}>1</Text>
+            <Text style={[s.tc, s.g1]}></Text>
+            <Text style={[s.tc, s.gCode]}>1</Text>
             <Text style={[s.tc, s.g2]}>2</Text>
             <Text style={[s.tc, s.g21]}>2.1</Text>
             <Text style={[s.tc, s.g22]}>2.2</Text>
@@ -287,6 +290,7 @@ export function EavrPDF({ data }: { data: EavrPdfData }) {
             return (
               <View key={i} style={s.tRow}>
                 <Text style={[s.tc, s.g1]}>{i + 1}</Text>
+                <Text style={[s.tc, s.gCode, { color: "#999" }]}>код услуги</Text>
                 <Text style={[s.tl, s.g2]}>{item.name}</Text>
                 <Text style={[s.tc, s.g21]}></Text>
                 <Text style={[s.tc, s.g22]}></Text>
@@ -307,6 +311,7 @@ export function EavrPDF({ data }: { data: EavrPdfData }) {
           {/* Total */}
           <View style={s.tTotalRow}>
             <Text style={[s.tc, s.g1]}></Text>
+            <Text style={[s.tc, s.gCode]}></Text>
             <Text style={[s.tl, s.g2, { fontWeight: 700 }]}>Итого</Text>
             <Text style={[s.tc, s.g21]}></Text>
             <Text style={[s.tc, s.g22]}></Text>
@@ -325,6 +330,7 @@ export function EavrPDF({ data }: { data: EavrPdfData }) {
           {/* Всего по счету row */}
           <View style={s.tTotalRow}>
             <Text style={[s.tc, s.g1]}></Text>
+            <Text style={[s.tc, s.gCode]}></Text>
             <Text style={[s.tl, s.g2, { fontWeight: 700 }]}>Всего по счету</Text>
             <Text style={[s.tc, s.g21]}></Text>
             <Text style={[s.tc, s.g22]}></Text>
@@ -344,11 +350,13 @@ export function EavrPDF({ data }: { data: EavrPdfData }) {
         {/* Table hints */}
         <View style={{ marginTop: 4 }}>
           <Text style={{ fontSize: 6, fontWeight: 700, marginBottom: 1 }}>Подсказки по колонкам:</Text>
-          <Text style={{ fontSize: 5, color: "#555" }}>Кол. 1 (№ п/п): в первой графе нужно ввести код, соответствующий оказанной услуге (похож на ОКЭД).</Text>
-          <Text style={{ fontSize: 5, color: "#555" }}>Кол. 2 (Наименование): пишем вручную название услуги/работы.</Text>
+          <Text style={{ fontSize: 5, color: "#555" }}>М п/п: просто порядковый номер строки (1, 2, 3...).</Text>
+          <Text style={{ fontSize: 5, color: "#555" }}>Кол. 1 (Код): введите код, соответствующий оказанной услуге (похож на ОКЭД). Эта графа идёт перед наименованием услуг.</Text>
+          <Text style={{ fontSize: 5, color: "#555" }}>Кол. 2 (Наименование): пишем вручную название самой услуги/работы.</Text>
           <Text style={{ fontSize: 5, color: "#555" }}>Кол. 2.1-2.2 (Классификатор, ТНВЭД): оставьте пустым для обычных услуг.</Text>
           <Text style={{ fontSize: 5, color: "#555" }}>Кол. 3 (Дата): дата фактического выполнения работ.</Text>
-          <Text style={{ fontSize: 5, color: "#555" }}>Кол. 4-5 (Ед.изм, Кол-во): единица измерения и количество.</Text>
+          <Text style={{ fontSize: 5, color: "#555" }}>Кол. 4-5 (Ед.изм, Кол-во): единица измерения — одна услуга, количество.</Text>
+          <Text style={{ fontSize: 5, color: "#555" }}>Кол. 6-7 (Цена, Стоимость): цена за единицу, сумма. Если есть НДС — ставим его.</Text>
           <Text style={{ fontSize: 5, color: "#555" }}>Кол. 8 (Размер оборота): = стоимости работ (кол. 7) для обычных операций.</Text>
           <Text style={{ fontSize: 5, color: "#555" }}>Кол. 9-10 (НДС): "Без НДС" для ИП на упрощенке. Плательщики НДС — укажите 16%.</Text>
           <Text style={{ fontSize: 5, color: "#555" }}>После заполнения: нажмите "Проверить" для проверки ошибок, затем "Сохранить" и отправьте на подписание.</Text>

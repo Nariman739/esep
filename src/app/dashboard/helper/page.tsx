@@ -1,12 +1,15 @@
 "use client";
 import { useState } from "react";
 
-// 2025 constants
-const MRP = 3932;
+// 2026 constants
+const MRP = 4325;
 const MZP = 85000;
-const IPN_DEDUCTION = 14 * MRP; // 55,048
+const IPN_DEDUCTION_14 = 14 * MRP; // 60,550 — стандартный вычет
+const BASIC_DEDUCTION_30 = 30 * MRP; // 129,750 — базовый вычет (только в одном месте работы)
 
-function calcSalaryTaxes(salary: number) {
+type CalcMode = "employee" | "ip";
+
+function calcEmployeeTaxes(salary: number, applyBasicDeduction: boolean) {
   // From salary (employee pays)
   const opvBase = Math.min(salary, 50 * MZP);
   const opv = Math.round(opvBase * 0.1);
@@ -14,7 +17,8 @@ function calcSalaryTaxes(salary: number) {
   const vosmsBas = Math.min(salary, 10 * MZP);
   const vosms = Math.round(vosmsBas * 0.02);
 
-  const ipnBase = Math.max(salary - opv - IPN_DEDUCTION, 0);
+  const totalDeduction = IPN_DEDUCTION_14 + (applyBasicDeduction ? BASIC_DEDUCTION_30 : 0);
+  const ipnBase = Math.max(salary - opv - totalDeduction, 0);
   const ipn = Math.round(ipnBase * 0.1);
 
   const naRuki = salary - opv - vosms - ipn;
@@ -31,7 +35,17 @@ function calcSalaryTaxes(salary: number) {
 
   const employerTotal = so + osmsEmployer + sn;
 
-  return { opv, vosms, ipn, naRuki, so, osmsEmployer, sn, employerTotal };
+  return { opv, vosms, ipn, naRuki, so, osmsEmployer, sn, employerTotal, totalDeduction };
+}
+
+function calcIpTaxes(income: number) {
+  // ИП за себя (ежемесячно)
+  const opv = Math.round(Math.min(income, 50 * MZP) * 0.1);
+  const so = Math.round(Math.max(income - opv, 0) * 0.035);
+  const osms = Math.round(1.4 * MZP * 0.05); // фиксированная сумма
+  const total = opv + so + osms;
+
+  return { opv, so, osms, total };
 }
 
 const DEADLINES = [
@@ -44,12 +58,13 @@ const DEADLINES = [
 const FAQ = [
   { q: "Какая ставка налога на упрощёнке?", a: "3% от выручки за полугодие (1.5% ИПН + 1.5% СН). СН уменьшается на сумму СО." },
   { q: "Нужно ли сдавать 200.00 если нет работников?", a: "Нет. Форму 200.00 сдают только ИП с работниками." },
-  { q: "Сколько ИП платит за себя?", a: "ОПВ: 10% от объявленного дохода. СО: 3.5% от дохода. ОСМС: 5% × 1.4 × МЗП = 5 950 тг/мес (фиксированно)." },
+  { q: "Сколько ИП платит за себя?", a: `ОПВ: 10% от объявленного дохода. СО: 3.5% от дохода. ОСМС: 5% × 1.4 × МЗП = ${Math.round(1.4 * MZP * 0.05).toLocaleString("ru-KZ")} тг/мес (фиксированно).` },
   { q: "Какой КБЕ у ИП?", a: "19. У ТОО — 17." },
   { q: "Сколько дней на выставление ЭСФ после подписания АВР?", a: "15 календарных дней. Лучше выставлять сразу." },
-  { q: "Какой МРП и МЗП в 2025?", a: `МРП = ${MRP.toLocaleString("ru-KZ")} тг, МЗП = ${MZP.toLocaleString("ru-KZ")} тг.` },
+  { q: "Какой МРП и МЗП в 2026?", a: `МРП = ${MRP.toLocaleString("ru-KZ")} тг, МЗП = ${MZP.toLocaleString("ru-KZ")} тг.` },
   { q: "Какая ставка НДС?", a: "16% с 2025 года. ИП на упрощёнке — без НДС (если оборот до лимита)." },
   { q: "Где взять банковские реквизиты?", a: "В мобильном приложении вашего банка: КБЕ, ИИК (IBAN), БИК." },
+  { q: "Что такое базовый вычет 30 МРП?", a: `Это ${BASIC_DEDUCTION_30.toLocaleString("ru-KZ")} тг, которые вычитаются из ЗП перед расчётом ИПН. Применяется только в одном месте работы. Если работник работает в нескольких местах — вычет используется только на одном (основном).` },
 ];
 
 type Tab = "calculator" | "deadlines" | "faq";
@@ -57,10 +72,13 @@ type Tab = "calculator" | "deadlines" | "faq";
 export default function HelperPage() {
   const [tab, setTab] = useState<Tab>("calculator");
   const [salary, setSalary] = useState("100000");
+  const [calcMode, setCalcMode] = useState<CalcMode>("employee");
+  const [applyBasicDeduction, setApplyBasicDeduction] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   const sal = Number(salary) || 0;
-  const taxes = calcSalaryTaxes(sal);
+  const empTaxes = calcEmployeeTaxes(sal, applyBasicDeduction);
+  const ipTaxes = calcIpTaxes(sal);
 
   const tabs: { id: Tab; label: string }[] = [
     { id: "calculator", label: "Калькулятор ЗП" },
@@ -73,6 +91,7 @@ export default function HelperPage() {
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Помощник ИП</h1>
         <p className="text-gray-500 mt-1">Налоги, даты и частые вопросы</p>
+        <p className="text-xs text-gray-400 mt-0.5">Расчёт для ИП на упрощённой декларации (форма 910.00)</p>
       </div>
 
       {/* Ask accountant */}
@@ -111,9 +130,36 @@ export default function HelperPage() {
       {/* Calculator */}
       {tab === "calculator" && (
         <div className="space-y-4">
+          {/* Mode toggle: Employee vs IP */}
+          <div className="bg-white rounded-2xl border border-gray-200 p-4">
+            <p className="text-sm font-medium text-gray-700 mb-3">Расчёт за кого?</p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setCalcMode("employee")}
+                className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-medium transition ${
+                  calcMode === "employee"
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                }`}
+              >
+                За сотрудника
+              </button>
+              <button
+                onClick={() => setCalcMode("ip")}
+                className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-medium transition ${
+                  calcMode === "ip"
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                }`}
+              >
+                За ИП (за себя)
+              </button>
+            </div>
+          </div>
+
           <div className="bg-white rounded-2xl border border-gray-200 p-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Зарплата работника (до вычетов), тенге
+              {calcMode === "employee" ? "Зарплата сотрудника (до вычетов), тенге" : "Объявленный доход ИП за месяц, тенге"}
             </label>
             <input
               type="number"
@@ -124,27 +170,52 @@ export default function HelperPage() {
             />
           </div>
 
-          {sal > 0 && (
+          {/* === Employee mode === */}
+          {calcMode === "employee" && sal > 0 && (
             <>
+              {/* Basic deduction checkbox */}
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={applyBasicDeduction}
+                    onChange={(e) => setApplyBasicDeduction(e.target.checked)}
+                    className="mt-1 w-4 h-4 accent-blue-600"
+                  />
+                  <div>
+                    <p className="text-sm font-medium text-amber-900">
+                      Применить базовый вычет 30 МРП ({BASIC_DEDUCTION_30.toLocaleString("ru-KZ")} тг)
+                    </p>
+                    <p className="text-xs text-amber-700 mt-0.5">
+                      Используется только в одном месте работы. Если сотрудник работает в нескольких местах — вычет применяется только на одном (основном).
+                    </p>
+                  </div>
+                </label>
+              </div>
+
               {/* Employee deductions */}
               <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-3">
-                <h3 className="font-semibold text-gray-900">Вычитается из зарплаты работника:</h3>
-                <Row label="ОПВ (10%)" value={taxes.opv} />
-                <Row label="ВОСМС (2%)" value={taxes.vosms} />
-                <Row label="ИПН (10%)" value={taxes.ipn} hint={`(${sal.toLocaleString("ru-KZ")} − ${taxes.opv.toLocaleString("ru-KZ")} − ${IPN_DEDUCTION.toLocaleString("ru-KZ")}) × 10%`} />
+                <h3 className="font-semibold text-gray-900">Вычитается из зарплаты сотрудника:</h3>
+                <Row label="ОПВ (10%)" value={empTaxes.opv} />
+                <Row label="ВОСМС (2%)" value={empTaxes.vosms} />
+                <Row
+                  label="ИПН (10%)"
+                  value={empTaxes.ipn}
+                  hint={`(${sal.toLocaleString("ru-KZ")} − ${empTaxes.opv.toLocaleString("ru-KZ")} − ${empTaxes.totalDeduction.toLocaleString("ru-KZ")} вычет) × 10%${empTaxes.ipn === 0 ? " = 0 тг" : ""}`}
+                />
                 <div className="border-t pt-3">
-                  <Row label="На руки" value={taxes.naRuki} bold green />
+                  <Row label="На руки" value={empTaxes.naRuki} bold green />
                 </div>
               </div>
 
               {/* Employer costs */}
               <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-3">
                 <h3 className="font-semibold text-gray-900">Платит работодатель (сверх зарплаты):</h3>
-                <Row label="СО (3.5%)" value={taxes.so} />
-                <Row label="ОСМС работодатель (2%)" value={taxes.osmsEmployer} />
-                <Row label="СН (9.5% − СО)" value={taxes.sn} />
+                <Row label="СО (3.5%)" value={empTaxes.so} />
+                <Row label="ОСМС работодатель (2%)" value={empTaxes.osmsEmployer} />
+                <Row label="СН (9.5% − СО)" value={empTaxes.sn} />
                 <div className="border-t pt-3">
-                  <Row label="Итого сверх ЗП" value={taxes.employerTotal} bold />
+                  <Row label="Итого сверх ЗП" value={empTaxes.employerTotal} bold />
                 </div>
               </div>
 
@@ -152,17 +223,54 @@ export default function HelperPage() {
               <div className="bg-blue-50 rounded-2xl border border-blue-200 p-6 space-y-2">
                 <h3 className="font-semibold text-blue-900">Итого:</h3>
                 <div className="flex justify-between text-sm">
-                  <span className="text-blue-700">Работник получит</span>
-                  <span className="font-bold text-blue-900">{taxes.naRuki.toLocaleString("ru-KZ")} тг</span>
+                  <span className="text-blue-700">Сотрудник получит</span>
+                  <span className="font-bold text-blue-900">{empTaxes.naRuki.toLocaleString("ru-KZ")} тг</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-blue-700">Общая стоимость для ИП</span>
-                  <span className="font-bold text-blue-900">{(sal + taxes.employerTotal).toLocaleString("ru-KZ")} тг</span>
+                  <span className="font-bold text-blue-900">{(sal + empTaxes.employerTotal).toLocaleString("ru-KZ")} тг</span>
                 </div>
               </div>
 
               <p className="text-xs text-gray-400 text-center">
-                МРП 2025 = {MRP.toLocaleString("ru-KZ")} тг, МЗП = {MZP.toLocaleString("ru-KZ")} тг, вычет ИПН = 14 МРП = {IPN_DEDUCTION.toLocaleString("ru-KZ")} тг
+                МРП 2026 = {MRP.toLocaleString("ru-KZ")} тг, МЗП = {MZP.toLocaleString("ru-KZ")} тг, вычет ИПН = 14 МРП ({IPN_DEDUCTION_14.toLocaleString("ru-KZ")} тг){applyBasicDeduction ? ` + базовый вычет 30 МРП (${BASIC_DEDUCTION_30.toLocaleString("ru-KZ")} тг)` : ""}
+              </p>
+            </>
+          )}
+
+          {/* === IP mode === */}
+          {calcMode === "ip" && sal > 0 && (
+            <>
+              <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-3">
+                <h3 className="font-semibold text-gray-900">ИП платит за себя (ежемесячно):</h3>
+                <Row label="ОПВ (10%)" value={ipTaxes.opv} hint="10% от объявленного дохода" />
+                <Row label="СО (3.5%)" value={ipTaxes.so} hint="3.5% от (доход − ОПВ)" />
+                <Row label="ОСМС (5% × 1.4 × МЗП)" value={ipTaxes.osms} hint="Фиксированная сумма" />
+                <div className="border-t pt-3">
+                  <Row label="Итого за себя в месяц" value={ipTaxes.total} bold />
+                </div>
+              </div>
+
+              <div className="bg-blue-50 rounded-2xl border border-blue-200 p-6 space-y-2">
+                <h3 className="font-semibold text-blue-900">Итого:</h3>
+                <div className="flex justify-between text-sm">
+                  <span className="text-blue-700">Ежемесячные отчисления</span>
+                  <span className="font-bold text-blue-900">{ipTaxes.total.toLocaleString("ru-KZ")} тг</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-blue-700">Остаётся от дохода</span>
+                  <span className="font-bold text-blue-900">{(sal - ipTaxes.total).toLocaleString("ru-KZ")} тг</span>
+                </div>
+              </div>
+
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
+                <p className="text-xs text-amber-800">
+                  <span className="font-semibold">Важно:</span> Помимо ежемесячных отчислений, ИП на упрощёнке платит 3% от выручки за полугодие (по форме 910.00). Это основной налог ИП.
+                </p>
+              </div>
+
+              <p className="text-xs text-gray-400 text-center">
+                МРП 2026 = {MRP.toLocaleString("ru-KZ")} тг, МЗП = {MZP.toLocaleString("ru-KZ")} тг
               </p>
             </>
           )}
