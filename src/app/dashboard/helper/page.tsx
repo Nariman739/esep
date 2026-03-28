@@ -4,7 +4,6 @@ import { useState } from "react";
 // 2026 constants
 const MRP = 4325;
 const MZP = 85000;
-const IPN_DEDUCTION_14 = 14 * MRP; // 60,550 — стандартный вычет
 const BASIC_DEDUCTION_30 = 30 * MRP; // 129,750 — базовый вычет (только в одном месте работы)
 
 type CalcMode = "employee" | "ip";
@@ -17,54 +16,57 @@ function calcEmployeeTaxes(salary: number, applyBasicDeduction: boolean) {
   const vosmsBas = Math.min(salary, 10 * MZP);
   const vosms = Math.round(vosmsBas * 0.02);
 
-  const totalDeduction = IPN_DEDUCTION_14 + (applyBasicDeduction ? BASIC_DEDUCTION_30 : 0);
-  const ipnBase = Math.max(salary - opv - totalDeduction, 0);
+  const deduction = applyBasicDeduction ? BASIC_DEDUCTION_30 : 0;
+  const ipnBase = Math.max(salary - opv - vosms - deduction, 0);
   const ipn = Math.round(ipnBase * 0.1);
 
   const naRuki = salary - opv - vosms - ipn;
 
-  // Employer pays (on top of salary)
-  const soBase = Math.min(salary - opv, 7 * MZP);
-  const so = Math.round(Math.max(soBase, 0) * 0.035);
+  // Employer pays (on top of salary) — для ИП на упрощёнке
+  // СО = 5% × (ЗП - ОПВ). Если ЗП = МЗП, то ОПВ не вычитаем: МЗП × 5%
+  const soBase = salary <= MZP ? salary : Math.max(salary - opv, 0);
+  const so = Math.round(Math.min(soBase, 7 * MZP) * 0.05);
 
-  const osmsEmployer = Math.round(Math.min(salary, 10 * MZP) * 0.02);
+  // ООСМС работодатель = 3% от ЗП
+  const osmsEmployer = Math.round(Math.min(salary, 10 * MZP) * 0.03);
 
-  const snBase = salary - opv - vosms;
-  const snCalc = Math.round(Math.max(snBase, 0) * 0.095) - so;
-  const sn = Math.max(snCalc, 0);
+  // ОПВР = 3.5% от ЗП
+  const opvr = Math.round(salary * 0.035);
 
-  const employerTotal = so + osmsEmployer + sn;
+  const employerTotal = so + osmsEmployer + opvr;
 
-  return { opv, vosms, ipn, naRuki, so, osmsEmployer, sn, employerTotal, totalDeduction };
+  return { opv, vosms, ipn, naRuki, so, osmsEmployer, opvr, employerTotal, deduction };
 }
 
 function calcIpTaxes(income: number) {
   // ИП за себя (ежемесячно)
   const opv = Math.round(Math.min(income, 50 * MZP) * 0.1);
-  const so = Math.round(Math.max(income - opv, 0) * 0.035);
-  const osms = Math.round(1.4 * MZP * 0.05); // фиксированная сумма
-  const total = opv + so + osms;
+  const so = Math.round(Math.max(income, 0) * 0.05); // 5% от дохода (ОПВ не вычитаем)
+  const vosms = Math.round(1.4 * MZP * 0.05); // фиксированная сумма
+  const opvr = Math.round(income * 0.035); // 3.5% от дохода
+  const total = opv + so + vosms + opvr;
 
-  return { opv, so, osms, total };
+  return { opv, so, vosms, opvr, total };
 }
 
 const DEADLINES = [
-  { period: "Ежемесячно до 25 числа", items: ["ОПВ, ВОСМС, ИПН с зарплат работников", "СО, ОСМС (работодатель) за работников", "ОПВ, СО, ОСМС за себя (ИП)"] },
+  { period: "Ежемесячно до 25 числа", items: ["ОПВ, ВОСМС, ИПН с зарплат работников", "СО, ООСМС, ОПВР (работодатель) за работников", "ОПВ, СО, ВОСМС, ОПВР за себя (ИП)"] },
   { period: "910.00 — 1 полугодие", items: ["Подача: до 15 августа", "Уплата: до 25 августа"] },
   { period: "910.00 — 2 полугодие", items: ["Подача: до 15 февраля", "Уплата: до 25 февраля"] },
   { period: "200.00 за работников (квартальная)", items: ["Q1: до 15 мая", "Q2: до 15 августа", "Q3: до 15 ноября", "Q4: до 15 февраля"] },
 ];
 
 const FAQ = [
-  { q: "Какая ставка налога на упрощёнке?", a: "3% от выручки за полугодие (1.5% ИПН + 1.5% СН). СН уменьшается на сумму СО." },
+  { q: "Какая ставка налога на упрощёнке?", a: "ИПН (налог на доход): базовая ставка 4% от дохода. Местные акиматы могут корректировать от 2% до 6%. В 2026 году акимат Астаны установил ставку 3%. Ставка может меняться каждый год." },
   { q: "Нужно ли сдавать 200.00 если нет работников?", a: "Нет. Форму 200.00 сдают только ИП с работниками." },
-  { q: "Сколько ИП платит за себя?", a: `ОПВ: 10% от объявленного дохода. СО: 3.5% от дохода. ОСМС: 5% × 1.4 × МЗП = ${Math.round(1.4 * MZP * 0.05).toLocaleString("ru-KZ")} тг/мес (фиксированно).` },
+  { q: "Сколько ИП платит за себя?", a: `ОПВ: 10% от объявленного дохода. СО: 5% от дохода. ВОСМС: 5% × 1.4 × МЗП = ${Math.round(1.4 * MZP * 0.05).toLocaleString("ru-KZ")} тг/мес (фиксированно). ОПВР: 3.5% от дохода.` },
   { q: "Какой КБЕ у ИП?", a: "19. У ТОО — 17." },
   { q: "Сколько дней на выставление ЭСФ после подписания АВР?", a: "15 календарных дней. Лучше выставлять сразу." },
   { q: "Какой МРП и МЗП в 2026?", a: `МРП = ${MRP.toLocaleString("ru-KZ")} тг, МЗП = ${MZP.toLocaleString("ru-KZ")} тг.` },
-  { q: "Какая ставка НДС?", a: "16% с 2025 года. ИП на упрощёнке — без НДС (если оборот до лимита)." },
+  { q: "Какая ставка НДС?", a: "Базовая ставка в 2026 году — 16%. Пониженные ставки: 5% (медицинские услуги, реализация лекарств), 10% (отечественные периодические печатные издания). Согласно новому налоговому кодексу, ИП на упрощённом режиме не может быть плательщиком НДС." },
   { q: "Где взять банковские реквизиты?", a: "В мобильном приложении вашего банка: КБЕ, ИИК (IBAN), БИК." },
-  { q: "Что такое базовый вычет 30 МРП?", a: `Это ${BASIC_DEDUCTION_30.toLocaleString("ru-KZ")} тг, которые вычитаются из ЗП перед расчётом ИПН. Применяется только в одном месте работы. Если работник работает в нескольких местах — вычет используется только на одном (основном).` },
+  { q: "Что такое базовый вычет 30 МРП?", a: `Базовый налоговый вычет в Казахстане с 2026 года составляет 30 МРП (${BASIC_DEDUCTION_30.toLocaleString("ru-KZ")} тг) и применяется за каждый календарный месяц. Общая сумма базового налогового вычета за календарный год не должна превышать 360 МРП (${(360 * MRP).toLocaleString("ru-KZ")} тг). Этот вычет заменил старый стандартный вычет в размере 14 МРП и сделал зарплату, получаемую на руки, больше. Применяется только в одном месте работы.` },
+  { q: "Условия применения упрощённого режима", a: "Подробная информация будет добавлена в ближайшее время." },
 ];
 
 type Tab = "calculator" | "deadlines" | "faq";
@@ -201,7 +203,7 @@ export default function HelperPage() {
                 <Row
                   label="ИПН (10%)"
                   value={empTaxes.ipn}
-                  hint={`(${sal.toLocaleString("ru-KZ")} − ${empTaxes.opv.toLocaleString("ru-KZ")} − ${empTaxes.totalDeduction.toLocaleString("ru-KZ")} вычет) × 10%${empTaxes.ipn === 0 ? " = 0 тг" : ""}`}
+                  hint={`(${sal.toLocaleString("ru-KZ")} − ${empTaxes.opv.toLocaleString("ru-KZ")} − ${empTaxes.vosms.toLocaleString("ru-KZ")}${applyBasicDeduction ? ` − ${BASIC_DEDUCTION_30.toLocaleString("ru-KZ")} вычет` : ""}) × 10%${empTaxes.ipn === 0 ? " = 0 тг" : ""}`}
                 />
                 <div className="border-t pt-3">
                   <Row label="На руки" value={empTaxes.naRuki} bold green />
@@ -211,9 +213,9 @@ export default function HelperPage() {
               {/* Employer costs */}
               <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-3">
                 <h3 className="font-semibold text-gray-900">Платит работодатель (сверх зарплаты):</h3>
-                <Row label="СО (3.5%)" value={empTaxes.so} />
-                <Row label="ОСМС работодатель (2%)" value={empTaxes.osmsEmployer} />
-                <Row label="СН (9.5% − СО)" value={empTaxes.sn} />
+                <Row label="СО (5%)" value={empTaxes.so} hint={`(ЗП${sal > MZP ? " − ОПВ" : ""}) × 5%`} />
+                <Row label="ООСМС (3%)" value={empTaxes.osmsEmployer} hint="3% от ЗП" />
+                <Row label="ОПВР (3.5%)" value={empTaxes.opvr} hint="3.5% от ЗП" />
                 <div className="border-t pt-3">
                   <Row label="Итого сверх ЗП" value={empTaxes.employerTotal} bold />
                 </div>
@@ -233,7 +235,7 @@ export default function HelperPage() {
               </div>
 
               <p className="text-xs text-gray-400 text-center">
-                МРП 2026 = {MRP.toLocaleString("ru-KZ")} тг, МЗП = {MZP.toLocaleString("ru-KZ")} тг, вычет ИПН = 14 МРП ({IPN_DEDUCTION_14.toLocaleString("ru-KZ")} тг){applyBasicDeduction ? ` + базовый вычет 30 МРП (${BASIC_DEDUCTION_30.toLocaleString("ru-KZ")} тг)` : ""}
+                МРП 2026 = {MRP.toLocaleString("ru-KZ")} тг, МЗП = {MZP.toLocaleString("ru-KZ")} тг{applyBasicDeduction ? `, базовый вычет 30 МРП (${BASIC_DEDUCTION_30.toLocaleString("ru-KZ")} тг)` : ""}
               </p>
             </>
           )}
@@ -244,8 +246,9 @@ export default function HelperPage() {
               <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-3">
                 <h3 className="font-semibold text-gray-900">ИП платит за себя (ежемесячно):</h3>
                 <Row label="ОПВ (10%)" value={ipTaxes.opv} hint="10% от объявленного дохода" />
-                <Row label="СО (3.5%)" value={ipTaxes.so} hint="3.5% от (доход − ОПВ)" />
-                <Row label="ОСМС (5% × 1.4 × МЗП)" value={ipTaxes.osms} hint="Фиксированная сумма" />
+                <Row label="СО (5%)" value={ipTaxes.so} hint="5% от дохода" />
+                <Row label="ВОСМС (5% × 1.4 × МЗП)" value={ipTaxes.vosms} hint="Фиксированная сумма" />
+                <Row label="ОПВР (3.5%)" value={ipTaxes.opvr} hint="3.5% от дохода" />
                 <div className="border-t pt-3">
                   <Row label="Итого за себя в месяц" value={ipTaxes.total} bold />
                 </div>
