@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import DashboardNav from "@/components/dashboard-nav";
-import EasterEgg from "@/components/easter-egg";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser();
@@ -13,7 +12,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <main className="max-w-4xl mx-auto px-4 py-8">
         {children}
       </main>
-      <EasterEgg />
     </div>
   );
 }
