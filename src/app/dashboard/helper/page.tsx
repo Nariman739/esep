@@ -137,8 +137,13 @@ export default function HelperPage() {
           <div className="w-12 h-12 rounded-full bg-green-600 flex items-center justify-center text-white font-bold text-lg shrink-0">Ж</div>
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-green-900">Жанна Беркимбаева</p>
-            <p className="text-sm text-green-700 mt-0.5">Бухгалтер для ИП и ТОО · 7+ лет опыта</p>
-            <p className="text-xs text-green-600 mt-2 leading-relaxed">Веду бухгалтерский и налоговый учёт, сдаю отчёты, считаю налоги. Работаю внимательно и объясняю сложные вещи простым языком.</p>
+            <p className="text-sm text-green-700 mt-0.5">Бухгалтер для ИП и ТОО · 7+ лет опыта · 10+ компаний на сопровождении</p>
+            <p className="text-xs text-green-600 mt-2 leading-relaxed">Помогаю предпринимателям выстроить понятный и надёжный учёт, чтобы избежать штрафов, снизить налоговые риски и спокойно вести бизнес.</p>
+            <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1">
+              {["Бухгалтерский и налоговый учёт", "Подготовка и сдача отчётности", "Расчёт и оплата налогов", "Кадровый учёт", "Открытие и закрытие ИП", "Работа с egov, stat.gov, Enbek"].map((s) => (
+                <p key={s} className="text-xs text-green-600 flex items-start gap-1.5"><span className="text-green-500 mt-px">•</span>{s}</p>
+              ))}
+            </div>
           </div>
         </div>
         <a
