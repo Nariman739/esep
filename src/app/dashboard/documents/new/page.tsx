@@ -60,8 +60,10 @@ export default function NewDocumentPage() {
 
   async function handleCreate() {
     if (!clientId) { toast.error("Выберите клиента"); return; }
-    const validItems = items.filter((it) => it.name && Number(it.price) > 0);
-    if (validItems.length === 0) { toast.error("Добавьте хотя бы одну услугу"); return; }
+    const namedItems = items.filter((it) => it.name.trim());
+    if (namedItems.length === 0) { toast.error("Укажите название услуги"); return; }
+    const validItems = namedItems.filter((it) => Number(it.price) > 0);
+    if (validItems.length === 0) { toast.error("Укажите цену услуги"); return; }
 
     setLoading(true);
     try {
@@ -201,22 +203,32 @@ export default function NewDocumentPage() {
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 <div className="grid grid-cols-3 gap-2">
-                  <input
-                    type="number"
-                    min="1"
-                    value={item.quantity}
-                    onChange={(e) => updateItem(i, "quantity", e.target.value)}
-                    placeholder="Кол-во"
-                    className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  <input
-                    type="number"
-                    min="0"
-                    value={item.price}
-                    onChange={(e) => updateItem(i, "price", e.target.value)}
-                    placeholder="Цена (тг)"
-                    className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                  <div>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={item.quantity}
+                      onChange={(e) => updateItem(i, "quantity", e.target.value.replace(/\D/g, "") || "1")}
+                      placeholder="1"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <span className="text-[10px] text-gray-400 mt-0.5 block">Кол-во</span>
+                  </div>
+                  <div>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={item.price}
+                      onChange={(e) => updateItem(i, "price", e.target.value.replace(/\D/g, ""))}
+                      placeholder="Цена (тг)"
+                      className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        item.name && !item.price ? "border-red-300 bg-red-50" : "border-gray-300"
+                      }`}
+                    />
+                    <span className="text-[10px] text-gray-400 mt-0.5 block">Цена за ед.</span>
+                  </div>
                   <div className="flex items-center justify-end text-sm font-medium text-gray-700">
                     {itemTotals[i] > 0 ? `${itemTotals[i].toLocaleString("ru-KZ")} тг` : ""}
                   </div>
