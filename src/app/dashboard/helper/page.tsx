@@ -132,18 +132,22 @@ export default function HelperPage() {
       </div>
 
       {/* Ask accountant */}
-      <div className="bg-green-50 border border-green-200 rounded-2xl p-4 flex items-center justify-between">
-        <div>
-          <p className="font-medium text-green-800">Не нашли ответ?</p>
-          <p className="text-sm text-green-600 mt-0.5">Задайте вопрос бухгалтеру напрямую</p>
+      <div className="bg-green-50 border border-green-200 rounded-2xl p-5">
+        <div className="flex items-start gap-4">
+          <div className="w-12 h-12 rounded-full bg-green-600 flex items-center justify-center text-white font-bold text-lg shrink-0">Ж</div>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-green-900">Жанна Беркимбаева</p>
+            <p className="text-sm text-green-700 mt-0.5">Бухгалтер для ИП и ТОО · 7+ лет опыта</p>
+            <p className="text-xs text-green-600 mt-2 leading-relaxed">Веду бухгалтерский и налоговый учёт, сдаю отчёты, считаю налоги. Работаю внимательно и объясняю сложные вещи простым языком.</p>
+          </div>
         </div>
         <a
-          href="https://wa.me/77001234567?text=%D0%97%D0%B4%D1%80%D0%B0%D0%B2%D1%81%D1%82%D0%B2%D1%83%D0%B9%D1%82%D0%B5!%20%D0%92%D0%BE%D0%BF%D1%80%D0%BE%D1%81%20%D0%BF%D0%BE%20esep:"
+          href="https://wa.me/77713743877?text=%D0%97%D0%B4%D1%80%D0%B0%D0%B2%D1%81%D1%82%D0%B2%D1%83%D0%B9%D1%82%D0%B5!%20%D0%92%D0%BE%D0%BF%D1%80%D0%BE%D1%81%20%D0%BF%D0%BE%20esep:"
           target="_blank"
           rel="noopener noreferrer"
-          className="bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-4 py-2 rounded-xl transition shrink-0"
+          className="mt-3 w-full block text-center bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition"
         >
-          Написать в WhatsApp
+          Задать вопрос в WhatsApp
         </a>
       </div>
 

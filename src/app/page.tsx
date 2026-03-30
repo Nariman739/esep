@@ -472,20 +472,20 @@ export default async function Home() {
                     </div>
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-2xl font-black text-white" style={{ letterSpacing: "-0.02em" }}>Жана [Фамилия]</h3>
-                    <p className="font-semibold text-sm mt-0.5 mb-4" style={{ color: "#818cf8" }}>Налоговый консультант · Казахстан</p>
+                    <h3 className="text-2xl font-black text-white" style={{ letterSpacing: "-0.02em" }}>Жанна Беркимбаева</h3>
+                    <p className="font-semibold text-sm mt-0.5 mb-4" style={{ color: "#818cf8" }}>Бухгалтер для ИП и ТОО · Казахстан</p>
                     <blockquote className="text-base leading-relaxed border-l-2 pl-4" style={{ color: "rgba(255,255,255,0.55)", borderColor: "#6366f1" }}>
                       &ldquo;Я проверила каждую форму в Esep по требованиям налогового законодательства РК.
                       Счёт, АВР, ЭСФ — всё соответствует актуальным приказам МФ.
-                      Как бухгалтер с опытом работы с ИП, я знаю где обычно допускают ошибки — здесь их нет.&rdquo;
+                      Уже более 7 лет я работаю с малым бизнесом и знаю, где обычно допускают ошибки — здесь их нет.&rdquo;
                     </blockquote>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-3 gap-3">
                   {[
-                    { val: "10+", label: "лет опыта" },
-                    { val: "500+", label: "клиентов ИП" },
+                    { val: "7+", label: "лет опыта" },
+                    { val: "10+", label: "компаний" },
                     { val: "УСН", label: "специализация" },
                   ].map((s) => (
                     <div key={s.label} className="rounded-2xl p-4 text-center" style={{ background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.15)" }}>
@@ -497,16 +497,18 @@ export default async function Home() {
               </div>
             </div>
 
-            {/* Hint */}
-            <div className="mt-5 rounded-2xl px-6 py-5" style={{ background: "rgba(251,191,36,0.06)", border: "1px solid rgba(251,191,36,0.15)" }}>
-              <p className="font-bold mb-3" style={{ color: "#fbbf24", fontSize: "13px" }}>Жана, для заполнения этого блока нужно:</p>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {["Фото (деловое, квадратное)", "Полное имя и фамилия", "Лет опыта", "Кол-во клиентов (100+...)", "2–3 предложения о себе", "Контакт для кнопки «Вопрос»"].map((item) => (
-                  <div key={item} className="flex items-center gap-1.5 text-xs" style={{ color: "rgba(251,191,36,0.6)" }}>
-                    <span style={{ color: "#fbbf24" }}>→</span> {item}
-                  </div>
-                ))}
-              </div>
+            {/* CTA to WhatsApp */}
+            <div className="mt-5 text-center">
+              <a
+                href="https://wa.me/77713743877?text=%D0%97%D0%B4%D1%80%D0%B0%D0%B2%D1%81%D1%82%D0%B2%D1%83%D0%B9%D1%82%D0%B5!%20%D0%92%D0%BE%D0%BF%D1%80%D0%BE%D1%81%20%D0%BF%D0%BE%20%D0%B1%D1%83%D1%85%D0%B3%D0%B0%D0%BB%D1%82%D0%B5%D1%80%D0%B8%D0%B8:"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 font-bold text-sm px-6 py-3 rounded-full transition"
+                style={{ background: "rgba(99,102,241,0.12)", color: "#818cf8", border: "1px solid rgba(99,102,241,0.2)" }}
+              >
+                Задать вопрос Жанне
+                <span>→</span>
+              </a>
             </div>
           </div>
         </section>
