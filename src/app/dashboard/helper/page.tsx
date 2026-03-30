@@ -377,7 +377,7 @@ export default function HelperPage() {
             <div className="w-11 h-11 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-semibold text-base shrink-0">Ж</div>
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-gray-900">Жанна Беркимбаева</p>
-              <p className="text-sm text-indigo-600 mt-0.5 font-medium">Бухгалтер · 7+ лет · 10+ компаний</p>
+              <p className="text-sm text-indigo-600 mt-0.5 font-medium">7+ лет практического опыта · 10+ компаний на сопровождении</p>
               <p className="text-xs text-gray-500 mt-2 leading-relaxed">Помогаю предпринимателям выстроить понятный и надёжный учёт, чтобы избежать штрафов и спокойно вести бизнес.</p>
               <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5">
                 {["Бухгалтерский и налоговый учёт", "Подготовка и сдача отчётности", "Расчёт и оплата налогов", "Кадровый учёт", "Открытие и закрытие ИП", "Работа с egov, stat.gov, Enbek"].map((s) => (

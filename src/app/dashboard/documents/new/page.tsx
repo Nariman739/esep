@@ -256,9 +256,14 @@ export default function NewDocumentPage() {
               type="date"
               value={contractDate}
               onChange={(e) => setContractDate(e.target.value)}
-              className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                contractNumber && !contractDate ? "border-amber-400 bg-amber-50" : "border-gray-300"
+              }`}
             />
           </div>
+          {contractNumber && !contractDate && (
+            <p className="text-xs text-amber-600 mt-1.5">Укажите дату договора — она нужна для шпаргалок ЭСФ и АВР</p>
+          )}
         </div>
 
         <div>
