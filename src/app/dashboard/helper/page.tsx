@@ -61,26 +61,28 @@ const FAQ: { q: string; a: string | React.ReactNode }[] = [
   { q: "Условия применения упрощённого режима", a: (
     <div className="space-y-3">
       <p>Применять специальный налоговый режим на основе упрощённой декларации вправе ИП и юридические лица-резиденты РК, которые одновременно соответствуют следующим условиям:</p>
-      <ul className="list-disc list-inside space-y-1 text-sm text-gray-600">
+      <ul className="list-disc list-inside space-y-1 text-sm text-gray-500">
         <li>Вид деятельности не включён в перечень запрещённых для упрощёнки, утверждённый Правительством РК.</li>
         <li>Соблюдаются лимиты по доходу: предельный доход на УСН составляет 600 000 МРП (примерно {(600000 * MRP).toLocaleString("ru-KZ")} тг в год).</li>
       </ul>
-      <table className="w-full text-sm border border-gray-200 rounded-lg overflow-hidden">
-        <thead>
-          <tr className="bg-gray-50">
-            <th className="text-left px-3 py-2 font-medium text-gray-700 border-b">Показатель</th>
-            <th className="text-left px-3 py-2 font-medium text-gray-700 border-b">Ограничение</th>
-          </tr>
-        </thead>
-        <tbody className="text-gray-600">
-          <tr><td className="px-3 py-2 border-b">Оборот за год</td><td className="px-3 py-2 border-b">До <b className="text-gray-900">600 000 МРП</b> ({(600000 * MRP).toLocaleString("ru-KZ")} тг при МРП {MRP.toLocaleString("ru-KZ")} тг)</td></tr>
-          <tr><td className="px-3 py-2 border-b">Штат сотрудников</td><td className="px-3 py-2 border-b">Не регламентировано (лимитов нет)</td></tr>
-          <tr><td className="px-3 py-2 border-b">Филиалы и подразделения</td><td className="px-3 py-2 border-b">Не регламентировано</td></tr>
-          <tr><td className="px-3 py-2">НДС</td><td className="px-3 py-2"><b className="text-gray-900">Запрещено</b> (ИП на упрощёнке не могут быть плательщиками НДС)</td></tr>
-        </tbody>
-      </table>
-      <p>При необходимости, предприниматель может добровольно перейти на общеустановленный режим (ОУР), подав соответствующее заявление через Кабинет налогоплательщика.</p>
-      <p><a href="https://adilet.zan.kz/rus/docs/P2500000970" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline">Список запрещённых видов деятельности для упрощёнки</a></p>
+      <div className="overflow-x-auto -mx-1">
+        <table className="w-full text-sm border border-gray-200 rounded-lg overflow-hidden">
+          <thead>
+            <tr className="bg-gray-50">
+              <th className="text-left px-3 py-2 font-medium text-gray-700 border-b">Показатель</th>
+              <th className="text-left px-3 py-2 font-medium text-gray-700 border-b">Ограничение</th>
+            </tr>
+          </thead>
+          <tbody className="text-gray-500">
+            <tr><td className="px-3 py-2 border-b">Оборот за год</td><td className="px-3 py-2 border-b">До <b className="text-gray-900">600 000 МРП</b> ({(600000 * MRP).toLocaleString("ru-KZ")} тг)</td></tr>
+            <tr><td className="px-3 py-2 border-b">Штат сотрудников</td><td className="px-3 py-2 border-b">Не регламентировано</td></tr>
+            <tr><td className="px-3 py-2 border-b">Филиалы</td><td className="px-3 py-2 border-b">Не регламентировано</td></tr>
+            <tr><td className="px-3 py-2">НДС</td><td className="px-3 py-2"><b className="text-gray-900">Запрещено</b></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Предприниматель может добровольно перейти на ОУР через Кабинет налогоплательщика.</p>
+      <p><a href="https://adilet.zan.kz/rus/docs/P2500000970" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-800 underline underline-offset-2">Запрещённые виды деятельности для упрощёнки</a></p>
     </div>
   )},
   // 2) Ставка налога
@@ -106,114 +108,106 @@ const FAQ: { q: string; a: string | React.ReactNode }[] = [
 
 type Tab = "calculator" | "deadlines" | "faq";
 
+function Chevron({ open }: { open: boolean }) {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className={`shrink-0 transition-transform duration-200 ${open ? "rotate-180" : ""}`}>
+      <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export default function HelperPage() {
   const [tab, setTab] = useState<Tab>("calculator");
   const [salary, setSalary] = useState("100000");
   const [calcMode, setCalcMode] = useState<CalcMode>("employee");
   const [applyBasicDeduction, setApplyBasicDeduction] = useState(false);
-  const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [openFaqs, setOpenFaqs] = useState<Set<number>>(new Set());
+
+  const toggleFaq = (i: number) => {
+    setOpenFaqs((prev) => {
+      const next = new Set(prev);
+      if (next.has(i)) next.delete(i);
+      else next.add(i);
+      return next;
+    });
+  };
 
   const sal = Number(salary) || 0;
   const empTaxes = calcEmployeeTaxes(sal, applyBasicDeduction);
   const ipTaxes = calcIpTaxes(sal);
 
   const tabs: { id: Tab; label: string }[] = [
-    { id: "calculator", label: "Калькулятор ЗП" },
-    { id: "deadlines", label: "Даты отчётности" },
-    { id: "faq", label: "FAQ" },
+    { id: "calculator", label: "Калькулятор" },
+    { id: "deadlines", label: "Даты" },
+    { id: "faq", label: "Вопросы" },
   ];
 
   return (
-    <div className="max-w-2xl space-y-6">
-      {/* Header with gradient */}
-      <div className="rounded-2xl bg-gradient-to-br from-indigo-600 via-violet-600 to-purple-600 p-6 text-white shadow-lg shadow-indigo-200">
-        <h1 className="text-2xl font-extrabold tracking-tight">Помощник ИП</h1>
-        <p className="text-indigo-100 mt-1 text-sm">Налоги, даты и частые вопросы</p>
-        <p className="text-indigo-200/70 text-xs mt-0.5">Расчёт для ИП на упрощённой декларации (форма 910.00)</p>
+    <div className="max-w-2xl lg:max-w-3xl space-y-8">
+      {/* Header */}
+      <div className="rounded-2xl bg-gradient-to-br from-indigo-600 to-indigo-500 p-7 text-white">
+        <h1 className="text-2xl font-bold tracking-tight">Помощник ИП</h1>
+        <p className="text-indigo-200 mt-1 text-sm">Налоги, даты и частые вопросы</p>
+        <p className="text-indigo-300/60 text-xs mt-0.5">Расчёт для ИП на упрощённой декларации (форма 910.00)</p>
       </div>
 
-      {/* Ask accountant */}
-      <div className="rounded-2xl bg-white shadow-md shadow-gray-100 overflow-hidden">
-        <div className="h-1 bg-gradient-to-r from-emerald-400 to-teal-500" />
-        <div className="p-5">
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-white font-bold text-lg shrink-0 shadow-md shadow-emerald-200">Ж</div>
-            <div className="flex-1 min-w-0">
-              <p className="font-bold text-gray-900">Жанна Беркимбаева</p>
-              <p className="text-sm text-emerald-600 mt-0.5 font-medium">Бухгалтер для ИП и ТОО · 7+ лет · 10+ компаний</p>
-              <p className="text-xs text-gray-500 mt-2 leading-relaxed">Помогаю предпринимателям выстроить понятный и надёжный учёт, чтобы избежать штрафов и спокойно вести бизнес.</p>
-              <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1.5">
-                {["Бухгалтерский и налоговый учёт", "Подготовка и сдача отчётности", "Расчёт и оплата налогов", "Кадровый учёт", "Открытие и закрытие ИП", "Работа с egov, stat.gov, Enbek"].map((s) => (
-                  <p key={s} className="text-xs text-gray-500 flex items-center gap-1.5"><span className="w-1 h-1 rounded-full bg-emerald-400 shrink-0" />{s}</p>
-                ))}
-              </div>
-            </div>
-          </div>
-          <a
-            href="https://wa.me/77713743877?text=%D0%97%D0%B4%D1%80%D0%B0%D0%B2%D1%81%D1%82%D0%B2%D1%83%D0%B9%D1%82%D0%B5!%20%D0%92%D0%BE%D0%BF%D1%80%D0%BE%D1%81%20%D0%BF%D0%BE%20esep:"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-4 w-full block text-center bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-sm font-semibold px-4 py-3 rounded-xl transition shadow-md shadow-emerald-100"
-          >
-            Задать вопрос в WhatsApp
-          </a>
+      {/* Tabs — sticky on mobile */}
+      <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-sm py-2 -mx-1 px-1">
+        <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
+          {tabs.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+                tab === t.id
+                  ? "bg-white text-gray-900 shadow-sm"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
         </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex gap-1.5 bg-gray-100/80 p-1.5 rounded-2xl">
-        {tabs.map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-              tab === t.id
-                ? "bg-white text-gray-900 shadow-sm"
-                : "text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
       </div>
 
       {/* Calculator */}
       {tab === "calculator" && (
-        <div className="space-y-4">
-          {/* Mode toggle */}
-          <div className="flex gap-1.5 bg-gray-100/80 p-1.5 rounded-2xl">
+        <div className="space-y-5">
+          {/* Mode toggle — visually different from main tabs */}
+          <div className="flex gap-2">
             <button
               onClick={() => setCalcMode("employee")}
-              className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+              className={`flex-1 px-4 py-2 rounded-xl text-sm font-medium transition-all border ${
                 calcMode === "employee"
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "text-gray-500 hover:text-gray-700"
+                  ? "border-indigo-200 bg-indigo-50 text-indigo-700"
+                  : "border-gray-200 text-gray-500 hover:border-gray-300"
               }`}
             >
               За сотрудника
             </button>
             <button
               onClick={() => setCalcMode("ip")}
-              className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+              className={`flex-1 px-4 py-2 rounded-xl text-sm font-medium transition-all border ${
                 calcMode === "ip"
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "text-gray-500 hover:text-gray-700"
+                  ? "border-indigo-200 bg-indigo-50 text-indigo-700"
+                  : "border-gray-200 text-gray-500 hover:border-gray-300"
               }`}
             >
               За ИП (за себя)
             </button>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-md shadow-gray-100 p-6">
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+          <div className="bg-white rounded-2xl border border-gray-200 p-6">
+            <label className="block text-sm font-medium text-gray-600 mb-2">
               {calcMode === "employee" ? "Зарплата сотрудника (до вычетов), тенге" : "Заявленный доход ИП за месяц, тенге"}
             </label>
             <input
-              type="number"
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
               value={salary}
-              onChange={(e) => setSalary(e.target.value)}
-              min="0"
-              className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3.5 text-lg font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition"
+              onChange={(e) => setSalary(e.target.value.replace(/\D/g, ""))}
+              className="w-full border border-gray-200 rounded-xl px-4 py-3.5 text-xl font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
             />
           </div>
 
@@ -221,13 +215,13 @@ export default function HelperPage() {
           {calcMode === "employee" && sal > 0 && (
             <>
               {/* Basic deduction */}
-              <div className="bg-amber-50/60 rounded-2xl p-4 shadow-sm">
-                <label className="flex items-start gap-3 cursor-pointer">
+              <div className="bg-amber-50/80 border border-amber-200/50 rounded-2xl p-4">
+                <label className="flex items-start gap-3 cursor-pointer min-h-[44px]">
                   <input
                     type="checkbox"
                     checked={applyBasicDeduction}
                     onChange={(e) => setApplyBasicDeduction(e.target.checked)}
-                    className="mt-1 w-4 h-4 accent-indigo-600"
+                    className="mt-0.5 w-5 h-5 accent-indigo-600 rounded"
                   />
                   <div>
                     <p className="text-sm font-semibold text-amber-900">
@@ -241,8 +235,8 @@ export default function HelperPage() {
               </div>
 
               {/* Employee deductions */}
-              <div className="bg-white rounded-2xl shadow-md shadow-gray-100 p-6 space-y-3">
-                <h3 className="font-bold text-gray-900 text-sm">Вычитается из зарплаты:</h3>
+              <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
+                <h3 className="font-semibold text-gray-900 text-sm">Вычитается из зарплаты:</h3>
                 <Row label="ОПВ (10%)" value={empTaxes.opv} />
                 <Row label="ВОСМС (2%)" value={empTaxes.vosms} />
                 <Row
@@ -250,37 +244,37 @@ export default function HelperPage() {
                   value={empTaxes.ipn}
                   hint={`(${sal.toLocaleString("ru-KZ")} − ${empTaxes.opv.toLocaleString("ru-KZ")} − ${empTaxes.vosms.toLocaleString("ru-KZ")}${applyBasicDeduction ? ` − ${BASIC_DEDUCTION_30.toLocaleString("ru-KZ")} вычет` : ""}) × 10%${empTaxes.ipn === 0 ? " = 0 тг" : ""}`}
                 />
-                <div className="border-t border-gray-100 pt-3">
+                <div className="border-t border-gray-100 pt-4">
                   <Row label="На руки" value={empTaxes.naRuki} bold green />
                 </div>
               </div>
 
               {/* Employer costs */}
-              <div className="bg-white rounded-2xl shadow-md shadow-gray-100 p-6 space-y-3">
-                <h3 className="font-bold text-gray-900 text-sm">Платит работодатель (сверх ЗП):</h3>
+              <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
+                <h3 className="font-semibold text-gray-900 text-sm">Платит работодатель (сверх ЗП):</h3>
                 <Row label="СО (5%)" value={empTaxes.so} hint={`(ЗП${sal > MZP ? " − ОПВ" : ""}) × 5%`} />
                 <Row label="ООСМС (3%)" value={empTaxes.osmsEmployer} hint="3% от ЗП" />
                 <Row label="ОПВР (3.5%)" value={empTaxes.opvr} hint="3.5% от ЗП" />
-                <div className="border-t border-gray-100 pt-3">
+                <div className="border-t border-gray-100 pt-4">
                   <Row label="Итого сверх ЗП" value={empTaxes.employerTotal} bold />
                 </div>
               </div>
 
-              {/* Summary */}
-              <div className="rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 p-6 space-y-2 text-white shadow-lg shadow-indigo-200">
-                <h3 className="font-bold text-sm text-indigo-100">Итого:</h3>
+              {/* Summary — dark card */}
+              <div className="rounded-2xl bg-gray-900 p-6 space-y-3 text-white">
+                <h3 className="font-semibold text-sm text-gray-400">Итого</h3>
                 <div className="flex justify-between text-sm">
-                  <span className="text-indigo-100">Сотрудник получит</span>
-                  <span className="font-bold">{empTaxes.naRuki.toLocaleString("ru-KZ")} тг</span>
+                  <span className="text-gray-400">Сотрудник получит</span>
+                  <span className="font-bold text-lg tabular-nums">{empTaxes.naRuki.toLocaleString("ru-KZ")} тг</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-indigo-100">Общая стоимость для ИП</span>
-                  <span className="font-bold">{(sal + empTaxes.employerTotal).toLocaleString("ru-KZ")} тг</span>
+                  <span className="text-gray-400">Общая стоимость для ИП</span>
+                  <span className="font-bold text-lg tabular-nums">{(sal + empTaxes.employerTotal).toLocaleString("ru-KZ")} тг</span>
                 </div>
               </div>
 
               <p className="text-xs text-gray-400 text-center">
-                МРП 2026 = {MRP.toLocaleString("ru-KZ")} тг, МЗП = {MZP.toLocaleString("ru-KZ")} тг{applyBasicDeduction ? `, вычет 30 МРП (${BASIC_DEDUCTION_30.toLocaleString("ru-KZ")} тг)` : ""}
+                МРП = {MRP.toLocaleString("ru-KZ")} тг, МЗП = {MZP.toLocaleString("ru-KZ")} тг{applyBasicDeduction ? `, вычет 30 МРП (${BASIC_DEDUCTION_30.toLocaleString("ru-KZ")} тг)` : ""}
               </p>
             </>
           )}
@@ -288,37 +282,37 @@ export default function HelperPage() {
           {/* === IP mode === */}
           {calcMode === "ip" && sal > 0 && (
             <>
-              <div className="bg-white rounded-2xl shadow-md shadow-gray-100 p-6 space-y-3">
-                <h3 className="font-bold text-gray-900 text-sm">ИП платит за себя (ежемесячно):</h3>
+              <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
+                <h3 className="font-semibold text-gray-900 text-sm">ИП платит за себя (ежемесячно):</h3>
                 <Row label="ОПВ (10%)" value={ipTaxes.opv} hint="10% от заявленного дохода" />
                 <Row label="СО (5%)" value={ipTaxes.so} hint="5% от дохода" />
                 <Row label="ВОСМС (5% × 1.4 × МЗП)" value={ipTaxes.vosms} hint="Фиксированная сумма" />
                 <Row label="ОПВР (3.5%)" value={ipTaxes.opvr} hint="3.5% от дохода" />
-                <div className="border-t border-gray-100 pt-3">
+                <div className="border-t border-gray-100 pt-4">
                   <Row label="Итого за себя в месяц" value={ipTaxes.total} bold />
                 </div>
               </div>
 
-              <div className="rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 p-6 space-y-2 text-white shadow-lg shadow-indigo-200">
-                <h3 className="font-bold text-sm text-indigo-100">Итого:</h3>
+              {/* Summary — dark card with important note inside */}
+              <div className="rounded-2xl bg-gray-900 p-6 space-y-3 text-white">
+                <h3 className="font-semibold text-sm text-gray-400">Итого</h3>
                 <div className="flex justify-between text-sm">
-                  <span className="text-indigo-100">Ежемесячные отчисления</span>
-                  <span className="font-bold">{ipTaxes.total.toLocaleString("ru-KZ")} тг</span>
+                  <span className="text-gray-400">Ежемесячные отчисления</span>
+                  <span className="font-bold text-lg tabular-nums">{ipTaxes.total.toLocaleString("ru-KZ")} тг</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-indigo-100">Остаётся от дохода</span>
-                  <span className="font-bold">{(sal - ipTaxes.total).toLocaleString("ru-KZ")} тг</span>
+                  <span className="text-gray-400">Остаётся от дохода</span>
+                  <span className="font-bold text-lg tabular-nums">{(sal - ipTaxes.total).toLocaleString("ru-KZ")} тг</span>
                 </div>
-              </div>
-
-              <div className="bg-amber-50/60 rounded-2xl p-4 shadow-sm">
-                <p className="text-xs text-amber-800">
-                  <span className="font-bold">Важно:</span> Помимо ежемесячных отчислений, ИП на упрощёнке платит 3% от выручки за полугодие (по форме 910.00). Это основной налог ИП.
-                </p>
+                <div className="border-t border-gray-700 pt-3 mt-1">
+                  <p className="text-xs text-amber-400">
+                    <span className="font-semibold">+ налог 910.00:</span> ИП на упрощёнке платит 3% от выручки за полугодие. Это основной налог.
+                  </p>
+                </div>
               </div>
 
               <p className="text-xs text-gray-400 text-center">
-                МРП 2026 = {MRP.toLocaleString("ru-KZ")} тг, МЗП = {MZP.toLocaleString("ru-KZ")} тг
+                МРП = {MRP.toLocaleString("ru-KZ")} тг, МЗП = {MZP.toLocaleString("ru-KZ")} тг
               </p>
             </>
           )}
@@ -327,13 +321,13 @@ export default function HelperPage() {
 
       {/* Deadlines */}
       {tab === "deadlines" && (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {DEADLINES.map((d, i) => (
-            <div key={i} className="bg-white rounded-2xl shadow-md shadow-gray-100 p-5">
-              <h3 className="font-bold text-gray-900 text-sm mb-2">{d.period}</h3>
-              <ul className="space-y-1.5">
+            <div key={i} className="bg-white rounded-2xl border border-gray-200 p-6">
+              <h3 className="font-semibold text-gray-900 text-sm mb-3">{d.period}</h3>
+              <ul className="space-y-2">
                 {d.items.map((item, j) => (
-                  <li key={j} className="text-sm text-gray-600 flex items-start gap-2">
+                  <li key={j} className="text-sm text-gray-600 flex items-start gap-2.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 mt-1.5 shrink-0" />
                     {item}
                   </li>
@@ -347,24 +341,26 @@ export default function HelperPage() {
         </div>
       )}
 
-      {/* FAQ */}
+      {/* FAQ — multiple can be open */}
       {tab === "faq" && (
         <div className="space-y-2">
           {FAQ.map((item, i) => (
-            <div key={i} className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+            <div key={i} className={`bg-white rounded-2xl border transition-colors overflow-hidden ${openFaqs.has(i) ? "border-indigo-200" : "border-gray-200 hover:border-gray-300"}`}>
               <button
-                onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                className="w-full px-5 py-4 text-left flex items-center justify-between gap-3"
+                onClick={() => toggleFaq(i)}
+                className="w-full px-5 py-4 text-left flex items-center justify-between gap-3 min-h-[52px]"
               >
-                <span className="font-semibold text-gray-900 text-sm">{item.q}</span>
-                <span className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold transition-all ${openFaq === i ? "bg-indigo-600 text-white rotate-45" : "bg-gray-100 text-gray-400"}`}>+</span>
+                <span className="font-medium text-gray-900 text-sm">{item.q}</span>
+                <span className={`text-gray-400 ${openFaqs.has(i) ? "text-indigo-500" : ""}`}>
+                  <Chevron open={openFaqs.has(i)} />
+                </span>
               </button>
-              {openFaq === i && (
-                <div className="px-5 pb-4">
+              {openFaqs.has(i) && (
+                <div className="px-5 pb-5">
                   {typeof item.a === "string" ? (
-                    <p className="text-sm text-gray-600 leading-relaxed">{item.a}</p>
+                    <p className="text-sm text-gray-500 leading-relaxed">{item.a}</p>
                   ) : (
-                    <div className="text-sm text-gray-600 leading-relaxed">{item.a}</div>
+                    <div className="text-sm text-gray-500 leading-relaxed">{item.a}</div>
                   )}
                 </div>
               )}
@@ -372,6 +368,34 @@ export default function HelperPage() {
           ))}
         </div>
       )}
+
+      {/* Accountant card — AFTER content, not before */}
+      <div className="rounded-2xl bg-white border border-gray-200 overflow-hidden">
+        <div className="p-6">
+          <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-4">Не нашли ответ?</p>
+          <div className="flex items-start gap-4">
+            <div className="w-11 h-11 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-semibold text-base shrink-0">Ж</div>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-gray-900">Жанна Беркимбаева</p>
+              <p className="text-sm text-indigo-600 mt-0.5 font-medium">Бухгалтер · 7+ лет · 10+ компаний</p>
+              <p className="text-xs text-gray-500 mt-2 leading-relaxed">Помогаю предпринимателям выстроить понятный и надёжный учёт, чтобы избежать штрафов и спокойно вести бизнес.</p>
+              <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5">
+                {["Бухгалтерский и налоговый учёт", "Подготовка и сдача отчётности", "Расчёт и оплата налогов", "Кадровый учёт", "Открытие и закрытие ИП", "Работа с egov, stat.gov, Enbek"].map((s) => (
+                  <p key={s} className="text-xs text-gray-500 flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-indigo-400 shrink-0" />{s}</p>
+                ))}
+              </div>
+            </div>
+          </div>
+          <a
+            href="https://wa.me/77713743877?text=%D0%97%D0%B4%D1%80%D0%B0%D0%B2%D1%81%D1%82%D0%B2%D1%83%D0%B9%D1%82%D0%B5!%20%D0%92%D0%BE%D0%BF%D1%80%D0%BE%D1%81%20%D0%BF%D0%BE%20esep:"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-5 w-full block text-center bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-3 rounded-xl transition"
+          >
+            Задать вопрос в WhatsApp
+          </a>
+        </div>
+      </div>
     </div>
   );
 }
@@ -380,12 +404,12 @@ function Row({ label, value, hint, bold, green }: { label: string; value: number
   return (
     <div>
       <div className="flex justify-between items-baseline text-sm">
-        <span className={`${bold ? "font-bold" : "font-medium"} ${green ? "text-emerald-600" : "text-gray-700"}`}>{label}</span>
-        <span className={`tabular-nums ${bold ? "font-extrabold text-base" : "font-bold"} ${green ? "text-emerald-600" : "text-gray-900"}`}>
+        <span className={`${bold ? "font-semibold" : ""} ${green ? "text-emerald-600" : "text-gray-700"}`}>{label}</span>
+        <span className={`tabular-nums ${bold ? "font-bold text-base" : "font-semibold"} ${green ? "text-emerald-600" : "text-gray-900"}`}>
           {value.toLocaleString("ru-KZ")} тг
         </span>
       </div>
-      {hint && <p className="text-xs text-gray-400 mt-0.5">{hint}</p>}
+      {hint && <p className="text-xs text-gray-500 mt-0.5">{hint}</p>}
     </div>
   );
 }
