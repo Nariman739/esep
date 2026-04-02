@@ -64,3 +64,13 @@ export type Document = Prisma.DocumentModel
  * 
  */
 export type DocumentItem = Prisma.DocumentItemModel
+/**
+ * Model Subscription
+ * 
+ */
+export type Subscription = Prisma.SubscriptionModel
+/**
+ * Model Payment
+ * 
+ */
+export type Payment = Prisma.PaymentModel

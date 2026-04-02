@@ -289,7 +289,7 @@ export default async function Home() {
               { val: "3", label: "типа документов" },
               { val: "30 сек", label: "на создание PDF" },
               { val: "Прил. 50", label: "официальная форма МФ РК" },
-              { val: "0 ₸", label: "стоимость сейчас" },
+              { val: "от 0 ₸", label: "есть бесплатный тариф" },
             ].map((s) => (
               <div key={s.label} className="text-center">
                 <p className="font-black text-2xl text-gray-900" style={{ letterSpacing: "-0.02em" }}>{s.val}</p>
@@ -513,6 +513,97 @@ export default async function Home() {
           </div>
         </section>
 
+        {/* ─── PRICING ─── */}
+        <section id="pricing" className="py-28 px-6" style={{ background: "#fcfcfe" }}>
+          <div className="max-w-5xl mx-auto">
+            <div className="text-center mb-14">
+              <p className="text-xs font-black uppercase tracking-widest mb-3" style={{ color: "#6366f1" }}>Тарифы</p>
+              <h2 className="font-black text-gray-900" style={{ fontSize: "clamp(32px, 4vw, 48px)", letterSpacing: "-0.025em", lineHeight: "1.1" }}>
+                Простые и честные цены
+              </h2>
+              <p className="mt-4 text-base max-w-md mx-auto" style={{ color: "#6b7280" }}>
+                Начните бесплатно, перейдите на Про когда понадобится
+              </p>
+            </div>
+
+            <div className="grid sm:grid-cols-3 gap-5 max-w-4xl mx-auto">
+              {[
+                {
+                  name: "Бесплатный",
+                  price: "0",
+                  period: "",
+                  desc: "Попробовать",
+                  features: ["3 документа в месяц", "Счёт + АВР", "Шпаргалки ЭСФ и АВР", "Помощник ИП"],
+                  accent: "#6b7280",
+                  bg: "#f9fafb",
+                  border: "#e5e7eb",
+                },
+                {
+                  name: "Про",
+                  price: "2 990",
+                  period: "/мес",
+                  desc: "Для активных ИП",
+                  popular: true,
+                  features: ["Безлимит документов", "AI парсинг реквизитов", "Экспорт в Excel", "Все шпаргалки и помощник"],
+                  accent: "#6366f1",
+                  bg: "#eff0ff",
+                  border: "#6366f1",
+                },
+                {
+                  name: "Про + Бухгалтер",
+                  price: "9 990",
+                  period: "/мес",
+                  desc: "Спокойствие и поддержка",
+                  features: ["Всё из тарифа Про", "Личный бухгалтер в WhatsApp", "Проверка документов", "Помощь с ЭСФ и налогами"],
+                  accent: "#8b5cf6",
+                  bg: "#f5f3ff",
+                  border: "#8b5cf6",
+                },
+              ].map((p) => (
+                <div
+                  key={p.name}
+                  className="relative rounded-3xl p-7 border-2"
+                  style={{ background: p.bg, borderColor: p.border }}
+                >
+                  {p.popular && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 text-white text-xs font-black px-4 py-1 rounded-full" style={{ background: "#6366f1" }}>
+                      Популярный
+                    </div>
+                  )}
+                  <p className="text-xs font-bold uppercase tracking-wider" style={{ color: p.accent }}>{p.desc}</p>
+                  <h3 className="font-black text-gray-900 text-xl mt-1">{p.name}</h3>
+                  <div className="mt-3 mb-5">
+                    <span className="text-4xl font-black text-gray-900" style={{ letterSpacing: "-0.03em" }}>{p.price}</span>
+                    <span className="text-gray-500 ml-1">₸{p.period}</span>
+                  </div>
+                  <div className="space-y-2.5">
+                    {p.features.map((f) => (
+                      <div key={f} className="flex items-start gap-2">
+                        <svg className="w-4.5 h-4.5 shrink-0 mt-0.5" width="18" height="18" viewBox="0 0 18 18" fill="none">
+                          <circle cx="9" cy="9" r="9" fill={p.accent} fillOpacity="0.12" />
+                          <path d="M5.5 9.5l2.5 2.5L13 7" stroke={p.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        <span className="text-sm font-medium text-gray-700">{f}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <Link
+                    href="/register"
+                    className="mt-6 block text-center font-bold text-sm py-3 rounded-xl transition"
+                    style={{
+                      background: p.popular ? "#6366f1" : "white",
+                      color: p.popular ? "white" : "#374151",
+                      border: p.popular ? "none" : "1px solid #d1d5db",
+                    }}
+                  >
+                    {p.price === "0" ? "Начать бесплатно" : `Подключить за ${p.price} ₸`}
+                  </Link>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
         {/* ─── CTA ─── */}
         <section className="py-28 px-6" style={{ background: "#fcfcfe" }}>
           <div className="max-w-3xl mx-auto text-center">
@@ -531,7 +622,7 @@ export default async function Home() {
               className="inline-flex items-center gap-3 font-black px-10 py-5 rounded-2xl text-lg text-white transition active:scale-95"
               style={{ background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)", boxShadow: "0 20px 60px rgba(99,102,241,0.35), 0 4px 20px rgba(99,102,241,0.2)", letterSpacing: "-0.01em" }}
             >
-              Создать аккаунт — это бесплатно
+              Начать бесплатно
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                 <path d="M4 10h12M12 6l4 4-4 4" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>

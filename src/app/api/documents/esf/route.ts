@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { checkDocumentLimit } from "@/lib/subscription";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { EsfPDF } from "@/lib/pdf/esf";
 import { createElement } from "react";
@@ -9,6 +10,16 @@ import { formatDate } from "@/lib/utils";
 export async function POST(req: NextRequest) {
   try {
     const user = await requireAuth();
+
+    // Проверка лимита по тарифу
+    const { allowed, used, limit } = await checkDocumentLimit(user.id);
+    if (!allowed) {
+      return NextResponse.json(
+        { error: `Лимит документов исчерпан (${used}/${limit}). Перейдите на тариф Про.`, upgrade: true },
+        { status: 403 }
+      );
+    }
+
     const body = await req.json();
 
     const { avrId, turnoverDate } = body;

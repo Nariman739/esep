@@ -1,5 +1,6 @@
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { checkDocumentLimit, PLAN_NAMES } from "@/lib/subscription";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -9,6 +10,8 @@ export default async function DashboardPage() {
 
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  const { used, limit, plan } = await checkDocumentLimit(user.id);
 
   const [clientCount, docCount, monthDocs] = await Promise.all([
     prisma.client.count({ where: { userId: user.id } }),
@@ -38,6 +41,28 @@ export default async function DashboardPage() {
         </h1>
         <p className="text-gray-500 mt-1">Создавайте счета и документы за 30 секунд</p>
       </div>
+
+      {/* Subscription status */}
+      {plan === "FREE" && (
+        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 flex items-center justify-between flex-wrap gap-2">
+          <div>
+            <p className="font-medium text-blue-800">
+              Тариф: <span className="font-bold">{PLAN_NAMES[plan]}</span> — {used} из {limit} документов
+            </p>
+            <p className="text-sm text-blue-600 mt-0.5">
+              {limit - used > 0
+                ? `Осталось ${limit - used} в этом месяце`
+                : "Лимит исчерпан — перейдите на Про"}
+            </p>
+          </div>
+          <Link
+            href="/dashboard/pricing"
+            className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-xl transition"
+          >
+            Тарифы →
+          </Link>
+        </div>
+      )}
 
       {needsProfile && (
         <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center justify-between">

@@ -12,6 +12,7 @@ const LINKS = [
   { href: "/dashboard/documents/esf", label: "ЭСФ" },
   { href: "/dashboard/documents/eavr", label: "Эл. АВР" },
   { href: "/dashboard/helper", label: "Помощник" },
+  { href: "/dashboard/pricing", label: "Тарифы" },
   { href: "/dashboard/profile", label: "Мои реквизиты" },
 ];
 

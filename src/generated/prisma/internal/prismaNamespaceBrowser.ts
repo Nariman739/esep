@@ -55,7 +55,9 @@ export const ModelName = {
   Session: 'Session',
   Client: 'Client',
   Document: 'Document',
-  DocumentItem: 'DocumentItem'
+  DocumentItem: 'DocumentItem',
+  Subscription: 'Subscription',
+  Payment: 'Payment'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -159,6 +161,36 @@ export const DocumentItemScalarFieldEnum = {
 } as const
 
 export type DocumentItemScalarFieldEnum = (typeof DocumentItemScalarFieldEnum)[keyof typeof DocumentItemScalarFieldEnum]
+
+
+export const SubscriptionScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  plan: 'plan',
+  status: 'status',
+  expiresAt: 'expiresAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SubscriptionScalarFieldEnum = (typeof SubscriptionScalarFieldEnum)[keyof typeof SubscriptionScalarFieldEnum]
+
+
+export const PaymentScalarFieldEnum = {
+  id: 'id',
+  subscriptionId: 'subscriptionId',
+  userId: 'userId',
+  amount: 'amount',
+  currency: 'currency',
+  method: 'method',
+  status: 'status',
+  kaspiOrderId: 'kaspiOrderId',
+  kaspiTxnId: 'kaspiTxnId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type PaymentScalarFieldEnum = (typeof PaymentScalarFieldEnum)[keyof typeof PaymentScalarFieldEnum]
 
 
 export const SortOrder = {

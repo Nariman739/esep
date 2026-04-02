@@ -1,11 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getUserSubscription } from "@/lib/subscription";
 import * as XLSX from "xlsx";
 
 export async function GET(req: NextRequest) {
   try {
     const user = await requireAuth();
+
+    // Экспорт только для Про
+    const sub = await getUserSubscription(user.id);
+    if (sub.plan === "FREE") {
+      return NextResponse.json(
+        { error: "Экспорт в Excel доступен на тарифе Про", upgrade: true },
+        { status: 403 }
+      );
+    }
 
     const filterType = req.nextUrl.searchParams.get("type") as "INVOICE" | "AVR" | "ESF" | null;
 
