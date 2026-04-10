@@ -122,8 +122,10 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (err) {
-    console.error(err);
+    console.error("Invoice PDF error:", err);
     const message = err instanceof Error ? err.message : "Неизвестная ошибка";
+    const stack = err instanceof Error ? err.stack : undefined;
+    console.error("Stack:", stack);
     return NextResponse.json({ error: `Ошибка генерации счёта: ${message}` }, { status: 500 });
   }
 }

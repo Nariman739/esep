@@ -56,7 +56,7 @@ const s = StyleSheet.create({
 
   // Подписи
   signRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 20 },
-  signBlock: { flexDirection: "row", alignItems: "flex-end", gap: 6 },
+  signBlock: { flexDirection: "row", alignItems: "flex-end" },
   signLabel: { fontWeight: 700 },
   signLine: { flex: 1, borderBottomWidth: 1, borderColor: "#000", width: 200, marginHorizontal: 8 },
   stamp: { fontWeight: 700 },
