@@ -67,16 +67,19 @@ export async function POST(req: NextRequest) {
         contractNumber: contractNumber || null,
         contractDate: contractDate ? new Date(contractDate) : null,
         date: date ? new Date(date) : new Date(),
-        items: {
-          create: itemsList.map((it: ItemInput) => ({
-            name: it.name,
-            unit: it.unit || "услуга",
-            quantity: it.quantity,
-            price: it.price,
-            total: it.total,
-          })),
-        },
       },
+    });
+
+    // Создаём items отдельно (nested create требует транзакцию, Neon HTTP не поддерживает)
+    await prisma.documentItem.createMany({
+      data: itemsList.map((it: ItemInput) => ({
+        documentId: doc.id,
+        name: it.name,
+        unit: it.unit || "услуга",
+        quantity: it.quantity,
+        price: it.price,
+        total: it.total,
+      })),
     });
 
     const pdfData = {
